@@ -1,0 +1,65 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('./client', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn()
+  }
+}));
+
+const { default: apiClient } = await import('./client');
+const {
+  approveReviewItem,
+  listReviewItems,
+  publishReviewItem,
+  rejectReviewItem
+} = await import('./review');
+const { uploadMaterial } = await import('./materials');
+
+describe('teacher studio API wrappers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('loads review items through the shared api client', async () => {
+    const items = [{ id: 'review-1', status: 'draft' }];
+    apiClient.get.mockResolvedValue(items);
+
+    await expect(listReviewItems()).resolves.toBe(items);
+
+    expect(apiClient.get).toHaveBeenCalledWith('/api/review/items');
+  });
+
+  it('posts teacher review decisions without unwrapping a second time', async () => {
+    apiClient.post.mockResolvedValueOnce({ id: 'review-1', status: 'reviewed' });
+    apiClient.post.mockResolvedValueOnce({ id: 'review-2', status: 'rejected' });
+    apiClient.post.mockResolvedValueOnce({ id: 'review-1', status: 'published' });
+
+    await approveReviewItem('review-1');
+    await rejectReviewItem('review-2');
+    await publishReviewItem('review-1');
+
+    expect(apiClient.post).toHaveBeenNthCalledWith(1, '/api/review/items/review-1/approve', {
+      reviewer: 'teacher'
+    });
+    expect(apiClient.post).toHaveBeenNthCalledWith(2, '/api/review/items/review-2/reject', {
+      reviewer: 'teacher'
+    });
+    expect(apiClient.post).toHaveBeenNthCalledWith(3, '/api/review/items/review-1/publish');
+  });
+
+  it('uploads materials as form data with the selected course id and file', async () => {
+    const file = new File(['chapter notes'], 'chapter.txt', { type: 'text/plain' });
+    const created = { id: 'review-3' };
+    apiClient.post.mockResolvedValue(created);
+
+    await expect(uploadMaterial('ai-intro', file)).resolves.toBe(created);
+
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+    const [url, body] = apiClient.post.mock.calls[0];
+    expect(url).toBe('/api/materials/upload');
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get('course_id')).toBe('ai-intro');
+    expect(body.get('file')).toBe(file);
+  });
+});
