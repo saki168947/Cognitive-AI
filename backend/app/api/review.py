@@ -16,6 +16,10 @@ def _serialize(item):
     }
 
 
+def _error_response(exc):
+    return jsonify({"success": False, "error": str(exc)}), 400
+
+
 @api_bp.get("/review/items")
 def list_review_items():
     return jsonify({"success": True, "data": [_serialize(item) for item in ReviewService.list_items()]})
@@ -24,22 +28,28 @@ def list_review_items():
 @api_bp.post("/review/items/<item_id>/approve")
 def approve_review_item(item_id):
     body = request.get_json(silent=True) or {}
-    item = ReviewService.approve_item(
-        item_id,
-        reviewer=body.get("reviewer", ""),
-        notes=body.get("notes", ""),
-    )
+    try:
+        item = ReviewService.approve_item(
+            item_id,
+            reviewer=body.get("reviewer", ""),
+            notes=body.get("notes", ""),
+        )
+    except ValueError as exc:
+        return _error_response(exc)
     return jsonify({"success": True, "data": _serialize(item)})
 
 
 @api_bp.post("/review/items/<item_id>/reject")
 def reject_review_item(item_id):
     body = request.get_json(silent=True) or {}
-    item = ReviewService.reject_item(
-        item_id,
-        reviewer=body.get("reviewer", ""),
-        notes=body.get("notes", ""),
-    )
+    try:
+        item = ReviewService.reject_item(
+            item_id,
+            reviewer=body.get("reviewer", ""),
+            notes=body.get("notes", ""),
+        )
+    except ValueError as exc:
+        return _error_response(exc)
     return jsonify({"success": True, "data": _serialize(item)})
 
 
@@ -48,5 +58,5 @@ def publish_review_item(item_id):
     try:
         item = ReviewService.publish_item(item_id)
     except ValueError as exc:
-        return jsonify({"success": False, "error": str(exc)}), 400
+        return _error_response(exc)
     return jsonify({"success": True, "data": _serialize(item)})

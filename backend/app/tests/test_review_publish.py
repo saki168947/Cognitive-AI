@@ -2,6 +2,7 @@ import pytest
 
 from app.db import db
 from app.models import Concept, GraphEdge
+from app.services.course_service import CourseService
 from app.services.review_service import ReviewService
 from app.services.seed_data import seed_courses
 
@@ -39,6 +40,11 @@ def test_review_publish_creates_published_concept_and_edge(app):
 
         assert db.session.get(Concept, "concept-working-memory").status == "published"
         assert db.session.get(GraphEdge, "edge-working-memory-attention").status == "published"
+        graph = CourseService.get_graph("brain-cog-intro")
+        node_ids = {node["id"] for node in graph["nodes"]}
+        edge_ids = {edge["id"] for edge in graph["edges"]}
+        assert "concept-working-memory" in node_ids
+        assert "edge-working-memory-attention" in edge_ids
 
 
 def test_review_items_endpoint_returns_json_envelope(client, app):
@@ -113,6 +119,39 @@ def test_review_reject_endpoint_updates_status(client, app):
     assert payload["data"]["decision_notes"] == "Needs stronger evidence."
 
 
+def test_rejected_item_cannot_be_approved(client, app):
+    with app.app_context():
+        item = ReviewService.create_graph_suggestion(
+            title="Rejected relation",
+            payload={"course_id": "brain-cog-intro", "concepts": [], "edges": []},
+        )
+        ReviewService.reject_item(item.id, reviewer="teacher")
+        item_id = item.id
+
+    res = client.post(f"/api/review/items/{item_id}/approve", json={"reviewer": "teacher"})
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "Only draft items can be approved."}
+
+
+def test_published_item_cannot_be_rejected(client, app):
+    with app.app_context():
+        item = ReviewService.create_graph_suggestion(
+            title="Published relation",
+            payload={"course_id": "brain-cog-intro", "concepts": [], "edges": []},
+        )
+        ReviewService.approve_item(item.id, reviewer="teacher")
+        ReviewService.publish_item(item.id)
+        item_id = item.id
+
+    res = client.post(f"/api/review/items/{item_id}/reject", json={"reviewer": "teacher"})
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "Only draft items can be rejected."}
+
+
 def test_publish_non_reviewed_item_returns_clear_api_error(client, app):
     with app.app_context():
         item = ReviewService.create_graph_suggestion(
@@ -136,3 +175,54 @@ def test_publish_non_reviewed_item_raises_clear_service_error(app):
 
         with pytest.raises(ValueError, match="Only reviewed items can be published."):
             ReviewService.publish_item(item.id)
+
+
+def test_failed_publish_does_not_leave_partial_concepts(app):
+    with app.app_context():
+        seed_courses()
+        item = ReviewService.create_graph_suggestion(
+            title="Invalid edge target",
+            payload={
+                "course_id": "brain-cog-intro",
+                "concepts": [
+                    {
+                        "id": "concept-partial-write",
+                        "label": "Partial Write",
+                        "definition": "This should not persist if publish fails.",
+                    }
+                ],
+                "edges": [
+                    {
+                        "id": "edge-invalid-target",
+                        "source": "concept-partial-write",
+                        "target": "concept-missing-target",
+                        "relationship": "RELATED_TO",
+                    }
+                ],
+            },
+        )
+        ReviewService.approve_item(item.id, reviewer="teacher")
+
+        with pytest.raises(ValueError, match="Edge target concept does not exist"):
+            ReviewService.publish_item(item.id)
+
+        db.session.commit()
+
+        assert db.session.get(Concept, "concept-partial-write") is None
+        assert db.session.get(GraphEdge, "edge-invalid-target") is None
+
+
+def test_publish_non_object_payload_returns_clear_api_error(client, app):
+    with app.app_context():
+        item = ReviewService.create_graph_suggestion(
+            title="Invalid payload",
+            payload=["not", "an", "object"],
+        )
+        ReviewService.approve_item(item.id, reviewer="teacher")
+        item_id = item.id
+
+    res = client.post(f"/api/review/items/{item_id}/publish")
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "Review payload must be an object."}
