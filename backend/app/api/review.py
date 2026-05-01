@@ -21,7 +21,9 @@ def _error_response(exc):
 
 
 def _request_body():
-    body = request.get_json(silent=True) or {}
+    body = request.get_json(silent=True)
+    if body is None:
+        body = {}
     if not isinstance(body, dict):
         raise ValueError("Request body must be an object.")
     return body
