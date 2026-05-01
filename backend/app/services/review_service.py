@@ -11,7 +11,7 @@ class ReviewService:
         return ReviewItem.query.order_by(ReviewItem.created_at.desc()).all()
 
     @staticmethod
-    def create_graph_suggestion(title, payload):
+    def create_graph_suggestion(title, payload, commit=True):
         item = ReviewItem(
             id=f"review-{uuid4().hex}",
             title=title,
@@ -20,7 +20,10 @@ class ReviewService:
             payload_json=json.dumps(payload, ensure_ascii=False),
         )
         db.session.add(item)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
         db.session.refresh(item)
         return item
 

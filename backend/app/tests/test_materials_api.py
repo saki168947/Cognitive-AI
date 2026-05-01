@@ -3,6 +3,7 @@ import os
 
 from app.db import db
 from app.models import Chunk, Material, ReviewItem
+from app.services.material_service import MaterialService
 from app.services.review_service import ReviewService
 from app.services.seed_data import seed_courses
 
@@ -93,5 +94,90 @@ def test_upload_uses_app_config_upload_dir(client, app):
     assert res.status_code == 200
     with app.app_context():
         material = db.session.get(Material, payload["data"]["material"]["id"])
-        assert material.path == os.path.join(app.config["UPLOAD_DIR"], "config-path.txt")
+        assert material.path.startswith(os.path.join(app.config["UPLOAD_DIR"], material.id))
         assert os.path.exists(material.path)
+
+
+def test_upload_same_filename_keeps_distinct_paths(client, app):
+    with app.app_context():
+        seed_courses()
+
+    first = client.post(
+        "/api/materials/upload",
+        data={
+            "course_id": "brain-cog-intro",
+            "file": (io.BytesIO(b"First lecture."), "lecture.txt"),
+        },
+        content_type="multipart/form-data",
+    )
+    second = client.post(
+        "/api/materials/upload",
+        data={
+            "course_id": "brain-cog-intro",
+            "file": (io.BytesIO(b"Second lecture."), "lecture.txt"),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    with app.app_context():
+        first_material = db.session.get(Material, first.get_json()["data"]["material"]["id"])
+        second_material = db.session.get(Material, second.get_json()["data"]["material"]["id"])
+
+        assert first_material.path != second_material.path
+        assert os.path.exists(first_material.path)
+        assert os.path.exists(second_material.path)
+
+
+def test_upload_rejects_filename_that_sanitizes_to_empty(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.post(
+        "/api/materials/upload",
+        data={
+            "course_id": "brain-cog-intro",
+            "file": (io.BytesIO(b"text"), "../../"),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert res.status_code == 400
+    assert res.get_json() == {"success": False, "error": "file filename is invalid"}
+
+
+def test_upload_rolls_back_database_and_file_when_review_creation_fails(client, app, monkeypatch):
+    with app.app_context():
+        seed_courses()
+
+    saved_paths = []
+
+    def fail_review_creation(material, commit=True):
+        saved_paths.append(material.path)
+        raise RuntimeError("review failure")
+
+    monkeypatch.setattr(
+        MaterialService,
+        "create_review_suggestion_from_material",
+        staticmethod(fail_review_creation),
+    )
+    app.config["PROPAGATE_EXCEPTIONS"] = False
+
+    res = client.post(
+        "/api/materials/upload",
+        data={
+            "course_id": "brain-cog-intro",
+            "file": (io.BytesIO(b"Partial state should not persist."), "partial.txt"),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert res.status_code == 500
+    assert res.get_json() == {"success": False, "error": "material upload failed"}
+    with app.app_context():
+        assert Material.query.count() == 0
+        assert Chunk.query.count() == 0
+        assert ReviewItem.query.count() == 0
+    assert saved_paths
+    assert not os.path.exists(saved_paths[0])

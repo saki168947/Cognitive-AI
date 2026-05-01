@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 
 from app.api import api_bp
 from app.models import Material
@@ -21,8 +21,14 @@ def upload_material():
     if not course_id or file_storage is None:
         return jsonify({"success": False, "error": "course_id and file are required"}), 400
 
-    material = MaterialService.save_upload(course_id, file_storage)
-    review_item = MaterialService.create_review_suggestion_from_material(material)
+    try:
+        material, review_item = MaterialService.ingest_upload(course_id, file_storage)
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception:
+        current_app.logger.exception("Material upload failed")
+        return jsonify({"success": False, "error": "material upload failed"}), 500
+
     return jsonify({
         "success": True,
         "data": {
