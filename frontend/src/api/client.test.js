@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { unwrapEnvelope } from './client';
+import { unwrapEnvelope, unwrapEnvelopeError } from './client';
 
 describe('unwrapEnvelope', () => {
   it('returns payload data from a success envelope', () => {
@@ -12,5 +12,18 @@ describe('unwrapEnvelope', () => {
 
   it('returns raw response data when no envelope is present', () => {
     expect(unwrapEnvelope({ data: { status: 'ok' } })).toEqual({ status: 'ok' });
+  });
+
+  it('throws backend envelope messages from rejected axios responses', () => {
+    const axiosError = {
+      response: {
+        data: {
+          success: false,
+          error: 'question is required'
+        }
+      }
+    };
+
+    expect(() => unwrapEnvelopeError(axiosError)).toThrow('question is required');
   });
 });
