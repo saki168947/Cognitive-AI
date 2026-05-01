@@ -130,6 +130,8 @@ class ReviewService:
     def approve_item(item_id, reviewer="", notes=""):
         item = db.get_or_404(ReviewItem, item_id)
         ReviewService._ensure_draft(item, "approved")
+        ReviewService._optional_string({"reviewer": reviewer}, "reviewer", "Reviewer")
+        ReviewService._optional_string({"notes": notes}, "notes", "Decision notes")
         item.status = "reviewed"
         item.reviewer = reviewer
         item.decision_notes = notes
@@ -140,6 +142,8 @@ class ReviewService:
     def reject_item(item_id, reviewer="", notes=""):
         item = db.get_or_404(ReviewItem, item_id)
         ReviewService._ensure_draft(item, "rejected")
+        ReviewService._optional_string({"reviewer": reviewer}, "reviewer", "Reviewer")
+        ReviewService._optional_string({"notes": notes}, "notes", "Decision notes")
         item.status = "rejected"
         item.reviewer = reviewer
         item.decision_notes = notes

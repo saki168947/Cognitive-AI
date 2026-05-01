@@ -322,3 +322,31 @@ def test_approve_reject_non_object_json_returns_clear_api_error(client, app):
     assert approve_res.get_json() == {"success": False, "error": "Request body must be an object."}
     assert reject_res.status_code == 400
     assert reject_res.get_json() == {"success": False, "error": "Request body must be an object."}
+
+
+def test_approve_reject_reject_non_string_reviewer_notes(client, app):
+    with app.app_context():
+        approve_item = ReviewService.create_graph_suggestion(
+            title="Approve invalid reviewer",
+            payload={"course_id": "brain-cog-intro", "concepts": [], "edges": []},
+        )
+        reject_item = ReviewService.create_graph_suggestion(
+            title="Reject invalid notes",
+            payload={"course_id": "brain-cog-intro", "concepts": [], "edges": []},
+        )
+        approve_item_id = approve_item.id
+        reject_item_id = reject_item.id
+
+    approve_res = client.post(
+        f"/api/review/items/{approve_item_id}/approve",
+        json={"reviewer": ["teacher"], "notes": "ok"},
+    )
+    reject_res = client.post(
+        f"/api/review/items/{reject_item_id}/reject",
+        json={"reviewer": "teacher", "notes": {"text": "bad"}},
+    )
+
+    assert approve_res.status_code == 400
+    assert approve_res.get_json() == {"success": False, "error": "Reviewer must be a string."}
+    assert reject_res.status_code == 400
+    assert reject_res.get_json() == {"success": False, "error": "Decision notes must be a string."}
