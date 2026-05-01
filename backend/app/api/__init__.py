@@ -13,3 +13,4 @@ from . import courses  # noqa: E402,F401
 from . import graph  # noqa: E402,F401
 from . import materials  # noqa: E402,F401
 from . import review  # noqa: E402,F401
+from . import tutor  # noqa: E402,F401
