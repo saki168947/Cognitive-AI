@@ -63,3 +63,15 @@ def test_get_missing_chapter_returns_json_error(client):
     assert res.status_code == 404
     assert payload["success"] is False
     assert "not found" in payload["error"].lower()
+
+
+def test_get_course_detail_includes_activity_summary(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.get("/api/courses/ai-intro")
+    payload = res.get_json()
+
+    assert res.status_code == 200
+    assert payload["data"]["activity_summary"]["total"] >= 2
+    assert "code_lab" in payload["data"]["activity_summary"]["types"]

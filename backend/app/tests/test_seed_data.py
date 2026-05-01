@@ -1,5 +1,5 @@
 from app.db import db
-from app.models import Concept, Course, GraphEdge
+from app.models import Concept, Course, GraphEdge, LearningActivity
 from app.services.course_service import CourseService
 from app.services.seed_data import seed_courses
 
@@ -115,3 +115,13 @@ def test_course_graph_skips_edges_with_unpublished_endpoints(app):
 
     assert "edge-attention-related" not in edge_ids
     assert "concept-human-attention" not in node_ids
+
+
+def test_seed_courses_include_phase_one_learning_activities(app):
+    seed_courses()
+
+    activities = LearningActivity.query.all()
+    activity_types = {activity.activity_type for activity in activities}
+
+    assert len(activities) >= 4
+    assert activity_types >= {"lecture_deck", "code_lab", "cognitive_experiment", "bci_dataset_lab"}

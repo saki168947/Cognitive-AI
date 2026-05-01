@@ -2,7 +2,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import aliased
 
 from app.db import db
-from app.models import Chapter, Concept, Course, GraphEdge, QuizItem
+from app.models import Chapter, Concept, Course, GraphEdge, LearningActivity, QuizItem
 
 
 class CourseService:
@@ -18,10 +18,20 @@ class CourseService:
     def get_course_detail(course_id):
         course = db.get_or_404(Course, course_id)
         chapters = Chapter.query.filter_by(course_id=course_id).order_by(Chapter.order.asc()).all()
+        activities = LearningActivity.query.filter_by(course_id=course_id).all()
+        activity_types = {}
+        for activity in activities:
+            activity_types[activity.activity_type] = activity_types.get(activity.activity_type, 0) + 1
         return {
             "id": course.id,
             "title": course.title,
             "summary": course.summary,
+            "activity_summary": {
+                "total": len(activities),
+                "published": len([a for a in activities if a.status == "published"]),
+                "drafts": len([a for a in activities if a.status in {"draft", "scheduled"}]),
+                "types": activity_types,
+            },
             "chapters": [
                 {
                     "id": chapter.id,

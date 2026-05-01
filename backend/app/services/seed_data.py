@@ -1,5 +1,5 @@
 from app.db import db
-from app.models import Chapter, Concept, Course, GraphEdge, QuizItem
+from app.models import Chapter, Concept, Course, GraphEdge, LearningActivity, QuizItem
 
 
 def _merge_all(items):
@@ -45,6 +45,75 @@ def seed_courses():
         GraphEdge(id="edge-search-prereq", course_id="ai-intro", source_id="concept-search", target_id="concept-rl", relationship="PREREQUISITE_OF", evidence="Search concepts help explain planning in reinforcement learning."),
     ]
     _merge_all(edges)
+
+    activities = [
+        LearningActivity(
+            id="activity-ai-search-deck",
+            course_id="ai-intro",
+            chapter_id="ai-search",
+            title="Lecture Deck: Search and Problem Solving",
+            activity_type="lecture_deck",
+            summary="A teacher-published deck introducing state spaces, uninformed search, and heuristics.",
+            status="published",
+            provider="slidev",
+            config_json='{"format":"markdown","entry":"ai/search-and-problem-solving.md"}',
+            linked_concept_ids_json='["concept-search"]',
+            estimated_minutes=30,
+        ),
+        LearningActivity(
+            id="activity-ai-search-lab",
+            course_id="ai-intro",
+            chapter_id="ai-search",
+            title="Code Lab: Heuristic Search Sandbox",
+            activity_type="code_lab",
+            summary="Run and compare heuristic search strategies on a small pathfinding problem.",
+            status="published",
+            provider="jupyterlite",
+            config_json='{"runtime":"python","entry":"labs/heuristic-search.ipynb"}',
+            linked_concept_ids_json='["concept-search"]',
+            estimated_minutes=40,
+        ),
+        LearningActivity(
+            id="activity-brain-attention-deck",
+            course_id="brain-cog-intro",
+            chapter_id="brain-attention",
+            title="Lecture Deck: Attention and Cognitive Control",
+            activity_type="lecture_deck",
+            summary="A teacher-published deck connecting selective attention, working memory, and control.",
+            status="published",
+            provider="revealjs",
+            config_json='{"format":"markdown","entry":"brain/attention-control.md"}',
+            linked_concept_ids_json='["concept-human-attention"]',
+            estimated_minutes=30,
+        ),
+        LearningActivity(
+            id="activity-brain-stroop",
+            course_id="brain-cog-intro",
+            chapter_id="brain-attention",
+            title="Cognitive Experiment: Stroop Task",
+            activity_type="cognitive_experiment",
+            summary="Measure reaction time and interference in a browser-based attention experiment.",
+            status="published",
+            provider="jspsych",
+            config_json='{"experiment":"stroop","trials":24}',
+            linked_concept_ids_json='["concept-human-attention"]',
+            estimated_minutes=20,
+        ),
+        LearningActivity(
+            id="activity-brain-eeg-demo",
+            course_id="brain-cog-intro",
+            chapter_id="brain-attention",
+            title="Neuro Data Lab: EEG Attention Demo",
+            activity_type="bci_dataset_lab",
+            summary="Inspect sample EEG-like signals and connect event-related changes to attention.",
+            status="draft",
+            provider="mne-python",
+            config_json='{"dataset":"sample-eeg-attention","entry":"labs/eeg-attention-demo.ipynb"}',
+            linked_concept_ids_json='["concept-human-attention"]',
+            estimated_minutes=45,
+        ),
+    ]
+    _merge_all(activities)
 
     quiz_items = [
         QuizItem(id="quiz-ai-search-1", chapter_id="ai-search", prompt="What is the role of a heuristic in search?", answer="It estimates which states are more promising.", explanation="A heuristic guides search without guaranteeing perfect knowledge."),

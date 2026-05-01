@@ -116,3 +116,67 @@ def test_activity_service_create_activity_rejects_invalid_estimated_minutes(app,
                 "title": "Invalid Estimate",
                 "estimated_minutes": estimated_minutes,
             })
+
+
+def test_list_activities_auto_seeds(client):
+    res = client.get("/api/activities")
+    payload = res.get_json()
+
+    assert res.status_code == 200
+    assert payload["success"] is True
+    assert len(payload["data"]) >= 4
+    assert {item["type"] for item in payload["data"]} >= {"lecture_deck", "code_lab", "cognitive_experiment", "bci_dataset_lab"}
+
+
+def test_list_course_activities_filters_by_course(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.get("/api/courses/ai-intro/activities")
+    payload = res.get_json()
+
+    assert res.status_code == 200
+    assert payload["success"] is True
+    assert payload["data"]
+    assert all(item["course_id"] == "ai-intro" for item in payload["data"])
+
+
+def test_create_activity_validates_and_returns_created_item(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.post("/api/activities", json={
+        "id": "activity-ai-extra-reflection",
+        "course_id": "ai-intro",
+        "chapter_id": "ai-search",
+        "title": "Search Strategy Reflection",
+        "type": "reflection",
+        "summary": "Compare breadth-first search and A* on one concrete problem.",
+        "status": "draft",
+        "provider": "manual",
+        "estimated_minutes": 15,
+        "linked_concept_ids": ["concept-search"],
+    })
+    payload = res.get_json()
+
+    assert res.status_code == 201
+    assert payload["success"] is True
+    assert payload["data"]["id"] == "activity-ai-extra-reflection"
+    assert payload["data"]["type"] == "reflection"
+
+
+def test_create_activity_rejects_unknown_type(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.post("/api/activities", json={
+        "id": "activity-bad",
+        "course_id": "ai-intro",
+        "title": "Bad Activity",
+        "type": "unknown_kind",
+    })
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload["success"] is False
+    assert "type" in payload["error"]
