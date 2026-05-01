@@ -55,3 +55,42 @@ def test_tutor_api_rejects_empty_question(client):
 
     assert res.status_code == 400
     assert payload == {"success": False, "error": "question is required"}
+
+
+def test_tutor_answers_single_known_concept_token(app):
+    with app.app_context():
+        seed_courses()
+
+        result = TutorService.answer("What is attention?", course_id="brain-cog-intro")
+
+    assert result["insufficient_evidence"] is False
+    assert result["citations"]
+    assert "attention" in result["answer"].lower()
+
+
+def test_tutor_concept_scope_does_not_cite_unrelated_chapters(app):
+    with app.app_context():
+        seed_courses()
+
+        result = TutorService.answer(
+            "reward learning",
+            course_id="brain-cog-intro",
+            concept_id="concept-human-attention",
+        )
+
+    assert result["insufficient_evidence"] is True
+    assert result["citations"] == []
+
+
+def test_tutor_api_rejects_non_string_context_fields(client):
+    res = client.post(
+        "/api/tutor/ask",
+        json={
+            "question": "What is attention?",
+            "course_id": ["ai-intro"],
+        },
+    )
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "course_id must be a string"}

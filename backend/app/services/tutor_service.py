@@ -34,6 +34,12 @@ def _score(query_tokens, text):
     return len(query_tokens & _tokens(text))
 
 
+def _matches(query_tokens, text):
+    if not query_tokens:
+        return False
+    return _score(query_tokens, text) >= min(2, len(query_tokens))
+
+
 def _snippet(*parts):
     text = " ".join(part for part in parts if part).strip()
     return text[:240]
@@ -62,7 +68,7 @@ class TutorService:
                     edge.get("evidence", ""),
                 ]
             )
-            if _score(query_tokens, text) >= 2:
+            if _matches(query_tokens, text):
                 citations.append(
                     {
                         "type": "graph_edge",
@@ -75,7 +81,7 @@ class TutorService:
         for concept in graph["nodes"]:
             if concept_id and concept["id"] != concept_id:
                 continue
-            if _score(query_tokens, f"{concept['label']} {concept['definition']}") >= 2:
+            if _matches(query_tokens, f"{concept['label']} {concept['definition']}"):
                 citations.append(
                     {
                         "type": "concept",
@@ -85,22 +91,23 @@ class TutorService:
                     }
                 )
 
-        chapters_query = Chapter.query
-        if course_id:
-            chapters_query = chapters_query.filter_by(course_id=course_id)
-        if chapter_id:
-            chapters_query = chapters_query.filter_by(id=chapter_id)
-        for chapter in chapters_query.order_by(Chapter.order.asc()).all():
-            text = f"{chapter.title} {chapter.objectives} {chapter.body}"
-            if _score(query_tokens, text) >= 2:
-                citations.append(
-                    {
-                        "type": "chapter",
-                        "id": chapter.id,
-                        "title": chapter.title,
-                        "snippet": _snippet(chapter.objectives, chapter.body),
-                    }
-                )
+        if not concept_id or chapter_id:
+            chapters_query = Chapter.query
+            if course_id:
+                chapters_query = chapters_query.filter_by(course_id=course_id)
+            if chapter_id:
+                chapters_query = chapters_query.filter_by(id=chapter_id)
+            for chapter in chapters_query.order_by(Chapter.order.asc()).all():
+                text = f"{chapter.title} {chapter.objectives} {chapter.body}"
+                if _matches(query_tokens, text):
+                    citations.append(
+                        {
+                            "type": "chapter",
+                            "id": chapter.id,
+                            "title": chapter.title,
+                            "snippet": _snippet(chapter.objectives, chapter.body),
+                        }
+                    )
 
         if not citations:
             return {
