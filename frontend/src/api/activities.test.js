@@ -117,4 +117,16 @@ describe('dashboard summary', () => {
     expect(summary.courses).toEqual([]);
     expect(summary.errors).toEqual(['课程加载失败：courses unavailable']);
   });
+
+  it('surfaces graph load errors on affected courses', async () => {
+    apiClient.get.mockResolvedValueOnce([{ id: 'ai-intro', title: 'AI', chapters: [] }]);
+    apiClient.get.mockResolvedValueOnce([]);
+    apiClient.get.mockResolvedValueOnce([]);
+    apiClient.get.mockRejectedValueOnce(new Error('graph unavailable'));
+
+    const summary = await getDashboardSummary();
+
+    expect(summary.courses[0].graphUnavailable).toBe(true);
+    expect(summary.errors).toEqual(['AI图谱加载失败：graph unavailable']);
+  });
 });

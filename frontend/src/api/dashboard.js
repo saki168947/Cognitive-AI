@@ -56,9 +56,13 @@ export async function getDashboardSummary() {
   const graphResults = await Promise.allSettled(
     courses.map((course) => getGraph(course.id))
   );
+  const graphErrors = graphResults
+    .map((result, index) => resultError(result, `${courses[index]?.title || courses[index]?.id || '课程'}图谱`))
+    .filter(Boolean);
 
   const enrichedCourses = courses.map((course, index) => {
     const graph = graphResults[index].status === 'fulfilled' ? graphResults[index].value : null;
+    const graphUnavailable = graphResults[index].status === 'rejected';
     const courseActivities = activities.filter((activity) => activity.course_id === course.id || activity.courseId === course.id);
     return {
       id: course.id,
@@ -66,6 +70,7 @@ export async function getDashboardSummary() {
       summary: course.summary || course.description || '',
       graphNodeCount: countNodes(graph),
       graphEdgeCount: countEdges(graph),
+      graphUnavailable,
       chapterCount: safeArray(course.chapters).length,
       activityCount: courseActivities.length,
       publishedActivityCount: published.filter((activity) => activity.course_id === course.id || activity.courseId === course.id).length,
@@ -96,7 +101,7 @@ export async function getDashboardSummary() {
     activities,
     nextActivities: published.slice(0, 6),
     draftActivities: drafts.slice(0, 6),
-    errors,
+    errors: [...errors, ...graphErrors],
     pendingReviews,
     recentReviewItems
   };
