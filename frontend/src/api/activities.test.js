@@ -10,9 +10,12 @@ vi.mock('./client', () => ({
 const { default: apiClient } = await import('./client');
 const { listActivities, listCourseActivities, createActivity } = await import('./activities');
 const {
+  ACTIVITY_TYPE_LABELS,
   activityTypeLabel,
+  safeActivities,
   groupActivitiesByType,
   publishedActivities,
+  draftActivities,
   nextPublishedActivity
 } = await import('../views/activityState');
 
@@ -30,6 +33,15 @@ describe('activity API wrappers', () => {
 
     expect(apiClient.get).toHaveBeenNthCalledWith(1, '/api/activities', { params: {} });
     expect(apiClient.get).toHaveBeenNthCalledWith(2, '/api/courses/ai-intro/activities');
+  });
+
+  it('forwards activity query params to the shared api client', async () => {
+    const params = { course_id: 'ai-intro', status: 'published' };
+    apiClient.get.mockResolvedValue([{ id: 'activity-1' }]);
+
+    await expect(listActivities(params)).resolves.toEqual([{ id: 'activity-1' }]);
+
+    expect(apiClient.get).toHaveBeenCalledWith('/api/activities', { params });
   });
 
   it('creates activities through the shared api client', async () => {
@@ -50,12 +62,23 @@ describe('activity state helpers', () => {
   ];
 
   it('labels and groups activities', () => {
+    expect(ACTIVITY_TYPE_LABELS.code_lab).toBe('代码实验');
     expect(activityTypeLabel('code_lab')).toBe('代码实验');
+    expect(activityTypeLabel('unknown')).toBe('活动');
     expect(groupActivitiesByType(activities).code_lab[0].id).toBe('lab');
   });
 
   it('finds published activities and the next published item', () => {
     expect(publishedActivities(activities).map((item) => item.id)).toEqual(['lab', 'experiment']);
     expect(nextPublishedActivity(activities).id).toBe('lab');
+  });
+
+  it('normalizes activity collections and finds draft-like activities', () => {
+    expect(safeActivities(null)).toEqual([]);
+    expect(safeActivities(activities)).toBe(activities);
+    expect(draftActivities([
+      ...activities,
+      { id: 'scheduled', type: 'quiz', status: 'scheduled' }
+    ]).map((item) => item.id)).toEqual(['draft', 'scheduled']);
   });
 });
