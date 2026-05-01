@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   items: {
     type: Array,
     default: () => []
@@ -63,6 +63,6 @@ function formatPayload(payload) {
 }
 
 function isItemPending(id) {
-  return id ? pendingIds.includes(id) : false;
+  return id ? props.pendingIds.includes(id) : false;
 }
 </script>
