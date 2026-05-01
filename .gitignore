@@ -7,5 +7,6 @@ dist/
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/instance/
+backend/uv.lock
 *.sqlite
 .superpowers/

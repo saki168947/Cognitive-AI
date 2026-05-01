@@ -1,6 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .db import db
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class Course(db.Model):
@@ -8,7 +12,7 @@ class Course(db.Model):
     title = db.Column(db.String, nullable=False)
     summary = db.Column(db.Text, nullable=False, default="")
     status = db.Column(db.String, nullable=False, default="published")
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
 
 class Chapter(db.Model):
@@ -23,6 +27,7 @@ class Chapter(db.Model):
 
 class Concept(db.Model):
     id = db.Column(db.String, primary_key=True)
+    course_id = db.Column(db.String, db.ForeignKey("course.id"), nullable=False)
     label = db.Column(db.String, nullable=False)
     definition = db.Column(db.Text, nullable=False, default="")
     status = db.Column(db.String, nullable=False, default="published")
@@ -30,6 +35,7 @@ class Concept(db.Model):
 
 class GraphEdge(db.Model):
     id = db.Column(db.String, primary_key=True)
+    course_id = db.Column(db.String, db.ForeignKey("course.id"), nullable=False)
     source_id = db.Column(db.String, nullable=False)
     target_id = db.Column(db.String, nullable=False)
     relationship = db.Column(db.String, nullable=False)

@@ -4,7 +4,7 @@ from app.services.course_service import CourseService
 
 
 def seed_courses():
-    CourseService.reset_all()
+    CourseService.reset_all(commit=False)
 
     courses = [
         Course(
@@ -29,18 +29,18 @@ def seed_courses():
     db.session.add_all(chapters)
 
     concepts = [
-        Concept(id="concept-search", label="Heuristic Search", definition="A strategy for using estimates to guide problem solving."),
-        Concept(id="concept-transformer-attention", label="Transformer Attention", definition="A neural mechanism for weighting token relationships in context."),
-        Concept(id="concept-human-attention", label="Human Attention", definition="A cognitive process for selecting information for deeper processing."),
-        Concept(id="concept-rl", label="Reinforcement Learning", definition="Learning actions from rewards and penalties."),
-        Concept(id="concept-reward-system", label="Reward System", definition="Neural systems involved in motivation, valuation, and learning from outcomes."),
+        Concept(id="concept-search", course_id="ai-intro", label="Heuristic Search", definition="A strategy for using estimates to guide problem solving."),
+        Concept(id="concept-transformer-attention", course_id="ai-intro", label="Transformer Attention", definition="A neural mechanism for weighting token relationships in context."),
+        Concept(id="concept-human-attention", course_id="brain-cog-intro", label="Human Attention", definition="A cognitive process for selecting information for deeper processing."),
+        Concept(id="concept-rl", course_id="ai-intro", label="Reinforcement Learning", definition="Learning actions from rewards and penalties."),
+        Concept(id="concept-reward-system", course_id="brain-cog-intro", label="Reward System", definition="Neural systems involved in motivation, valuation, and learning from outcomes."),
     ]
     db.session.add_all(concepts)
 
     edges = [
-        GraphEdge(id="edge-attention-related", source_id="concept-transformer-attention", target_id="concept-human-attention", relationship="RELATED_TO", evidence="Both involve selective weighting, but operate in different systems."),
-        GraphEdge(id="edge-rl-reward", source_id="concept-rl", target_id="concept-reward-system", relationship="RELATED_TO", evidence="Reinforcement learning is inspired by reward-driven behavior and decision processes."),
-        GraphEdge(id="edge-search-prereq", source_id="concept-search", target_id="concept-rl", relationship="PREREQUISITE_OF", evidence="Search concepts help explain planning in reinforcement learning."),
+        GraphEdge(id="edge-attention-related", course_id="ai-intro", source_id="concept-transformer-attention", target_id="concept-human-attention", relationship="RELATED_TO", evidence="Both involve selective weighting, but operate in different systems."),
+        GraphEdge(id="edge-rl-reward", course_id="ai-intro", source_id="concept-rl", target_id="concept-reward-system", relationship="RELATED_TO", evidence="Reinforcement learning is inspired by reward-driven behavior and decision processes."),
+        GraphEdge(id="edge-search-prereq", course_id="ai-intro", source_id="concept-search", target_id="concept-rl", relationship="PREREQUISITE_OF", evidence="Search concepts help explain planning in reinforcement learning."),
     ]
     db.session.add_all(edges)
 

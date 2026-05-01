@@ -1,5 +1,6 @@
 from app.db import db
 from app.models import Chapter, Concept, Course, GraphEdge, QuizItem
+from sqlalchemy import or_
 
 
 class CourseService:
@@ -54,8 +55,26 @@ class CourseService:
 
     @staticmethod
     def get_graph(course_id=None):
-        concepts = Concept.query.filter_by(status="published").all()
-        edges = GraphEdge.query.filter_by(status="published").all()
+        edges_query = GraphEdge.query.filter_by(status="published")
+        concepts_query = Concept.query.filter_by(status="published")
+
+        if course_id:
+            edges = edges_query.filter_by(course_id=course_id).all()
+            connected_concept_ids = {
+                concept_id
+                for edge in edges
+                for concept_id in (edge.source_id, edge.target_id)
+            }
+            concepts_query = concepts_query.filter(
+                or_(
+                    Concept.course_id == course_id,
+                    Concept.id.in_(connected_concept_ids),
+                )
+            )
+        else:
+            edges = edges_query.all()
+
+        concepts = concepts_query.all()
         nodes = [
             {
                 "id": concept.id,
@@ -80,7 +99,8 @@ class CourseService:
         }
 
     @staticmethod
-    def reset_all():
+    def reset_all(commit=True):
         for model in (QuizItem, GraphEdge, Concept, Chapter, Course):
             db.session.query(model).delete()
-        db.session.commit()
+        if commit:
+            db.session.commit()
