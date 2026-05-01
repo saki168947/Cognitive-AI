@@ -20,6 +20,13 @@ def _error_response(exc):
     return jsonify({"success": False, "error": str(exc)}), 400
 
 
+def _request_body():
+    body = request.get_json(silent=True) or {}
+    if not isinstance(body, dict):
+        raise ValueError("Request body must be an object.")
+    return body
+
+
 @api_bp.get("/review/items")
 def list_review_items():
     return jsonify({"success": True, "data": [_serialize(item) for item in ReviewService.list_items()]})
@@ -27,8 +34,8 @@ def list_review_items():
 
 @api_bp.post("/review/items/<item_id>/approve")
 def approve_review_item(item_id):
-    body = request.get_json(silent=True) or {}
     try:
+        body = _request_body()
         item = ReviewService.approve_item(
             item_id,
             reviewer=body.get("reviewer", ""),
@@ -41,8 +48,8 @@ def approve_review_item(item_id):
 
 @api_bp.post("/review/items/<item_id>/reject")
 def reject_review_item(item_id):
-    body = request.get_json(silent=True) or {}
     try:
+        body = _request_body()
         item = ReviewService.reject_item(
             item_id,
             reviewer=body.get("reviewer", ""),

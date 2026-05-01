@@ -37,12 +37,32 @@ class ReviewService:
             raise ValueError(f"Only draft items can be {action}.")
 
     @staticmethod
+    def _required_string(data, key, label):
+        value = data.get(key)
+        if not value:
+            raise ValueError(f"{label} is required.")
+        if not isinstance(value, str):
+            raise ValueError(f"{label} must be a string.")
+        return value
+
+    @staticmethod
+    def _optional_string(data, key, label):
+        value = data.get(key, "")
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            raise ValueError(f"{label} must be a string.")
+        return value
+
+    @staticmethod
     def _validate_graph_payload(item):
         payload = ReviewService.get_payload(item)
         if not isinstance(payload, dict):
             raise ValueError("Review payload must be an object.")
 
         payload_course_id = payload.get("course_id")
+        if payload_course_id is not None and not isinstance(payload_course_id, str):
+            raise ValueError("Payload course_id must be a string.")
         concepts = payload.get("concepts", [])
         edges = payload.get("edges", [])
         if not isinstance(concepts, list):
@@ -56,19 +76,18 @@ class ReviewService:
             if not isinstance(concept, dict):
                 raise ValueError("Each concept must be an object.")
             course_id = concept.get("course_id") or payload_course_id
-            concept_id = concept.get("id")
-            label = concept.get("label")
+            if course_id is not None and not isinstance(course_id, str):
+                raise ValueError("Concept course_id must be a string.")
+            concept_id = ReviewService._required_string(concept, "id", "Concept id")
+            label = ReviewService._required_string(concept, "label", "Concept label")
+            definition = ReviewService._optional_string(concept, "definition", "Concept definition")
             if not course_id:
                 raise ValueError("Concept course_id is required.")
-            if not concept_id:
-                raise ValueError("Concept id is required.")
-            if not label:
-                raise ValueError("Concept label is required.")
             normalized_concepts.append({
                 "id": concept_id,
                 "course_id": course_id,
                 "label": label,
-                "definition": concept.get("definition", ""),
+                "definition": definition,
             })
             payload_concept_ids.add(concept_id)
 
@@ -77,20 +96,15 @@ class ReviewService:
             if not isinstance(edge, dict):
                 raise ValueError("Each edge must be an object.")
             course_id = edge.get("course_id") or payload_course_id
-            edge_id = edge.get("id")
-            source_id = edge.get("source")
-            target_id = edge.get("target")
-            relationship = edge.get("relationship")
+            if course_id is not None and not isinstance(course_id, str):
+                raise ValueError("Edge course_id must be a string.")
+            edge_id = ReviewService._required_string(edge, "id", "Edge id")
+            source_id = ReviewService._required_string(edge, "source", "Edge source")
+            target_id = ReviewService._required_string(edge, "target", "Edge target")
+            relationship = ReviewService._required_string(edge, "relationship", "Edge relationship")
+            evidence = ReviewService._optional_string(edge, "evidence", "Edge evidence")
             if not course_id:
                 raise ValueError("Edge course_id is required.")
-            if not edge_id:
-                raise ValueError("Edge id is required.")
-            if not source_id:
-                raise ValueError("Edge source is required.")
-            if not target_id:
-                raise ValueError("Edge target is required.")
-            if not relationship:
-                raise ValueError("Edge relationship is required.")
 
             for endpoint_name, concept_id in (("source", source_id), ("target", target_id)):
                 if concept_id in payload_concept_ids:
@@ -107,7 +121,7 @@ class ReviewService:
                 "source_id": source_id,
                 "target_id": target_id,
                 "relationship": relationship,
-                "evidence": edge.get("evidence", ""),
+                "evidence": evidence,
             })
 
         return normalized_concepts, normalized_edges

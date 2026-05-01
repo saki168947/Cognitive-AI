@@ -226,3 +226,99 @@ def test_publish_non_object_payload_returns_clear_api_error(client, app):
 
     assert res.status_code == 400
     assert payload == {"success": False, "error": "Review payload must be an object."}
+
+
+def test_publish_rejects_non_string_concept_fields(client, app):
+    with app.app_context():
+        item = ReviewService.create_graph_suggestion(
+            title="Invalid concept id",
+            payload={
+                "course_id": "brain-cog-intro",
+                "concepts": [{"id": ["bad"], "label": "Bad Concept"}],
+                "edges": [],
+            },
+        )
+        ReviewService.approve_item(item.id, reviewer="teacher")
+        item_id = item.id
+
+    res = client.post(f"/api/review/items/{item_id}/publish")
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "Concept id must be a string."}
+
+
+def test_publish_rejects_non_string_edge_fields(client, app):
+    with app.app_context():
+        seed_courses()
+        item = ReviewService.create_graph_suggestion(
+            title="Invalid edge source",
+            payload={
+                "course_id": "brain-cog-intro",
+                "concepts": [],
+                "edges": [
+                    {
+                        "id": "edge-invalid-source-type",
+                        "source": ["concept-human-attention"],
+                        "target": "concept-human-attention",
+                        "relationship": "RELATED_TO",
+                    }
+                ],
+            },
+        )
+        ReviewService.approve_item(item.id, reviewer="teacher")
+        item_id = item.id
+
+    res = client.post(f"/api/review/items/{item_id}/publish")
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "Edge source must be a string."}
+
+
+def test_publish_rejects_non_string_optional_text_fields(client, app):
+    with app.app_context():
+        item = ReviewService.create_graph_suggestion(
+            title="Invalid concept definition",
+            payload={
+                "course_id": "brain-cog-intro",
+                "concepts": [
+                    {
+                        "id": "concept-invalid-definition",
+                        "label": "Invalid Definition",
+                        "definition": {"text": "not a string"},
+                    }
+                ],
+                "edges": [],
+            },
+        )
+        ReviewService.approve_item(item.id, reviewer="teacher")
+        item_id = item.id
+
+    res = client.post(f"/api/review/items/{item_id}/publish")
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "Concept definition must be a string."}
+
+
+def test_approve_reject_non_object_json_returns_clear_api_error(client, app):
+    with app.app_context():
+        approve_item = ReviewService.create_graph_suggestion(
+            title="Approve invalid body",
+            payload={"course_id": "brain-cog-intro", "concepts": [], "edges": []},
+        )
+        reject_item = ReviewService.create_graph_suggestion(
+            title="Reject invalid body",
+            payload={"course_id": "brain-cog-intro", "concepts": [], "edges": []},
+        )
+        approve_item_id = approve_item.id
+        reject_item_id = reject_item.id
+
+    approve_res = client.post(f"/api/review/items/{approve_item_id}/approve", json=["bad"])
+    reject_res = client.post(f"/api/review/items/{reject_item_id}/reject", json=["bad"])
+
+    assert approve_res.status_code == 400
+    assert approve_res.get_json() == {"success": False, "error": "Request body must be an object."}
+    assert reject_res.status_code == 400
+    assert reject_res.get_json() == {"success": False, "error": "Request body must be an object."}
