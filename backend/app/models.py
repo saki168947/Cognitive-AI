@@ -36,11 +36,13 @@ class Concept(db.Model):
 class GraphEdge(db.Model):
     id = db.Column(db.String, primary_key=True)
     course_id = db.Column(db.String, db.ForeignKey("course.id"), nullable=False)
-    source_id = db.Column(db.String, nullable=False)
-    target_id = db.Column(db.String, nullable=False)
+    source_id = db.Column(db.String, db.ForeignKey("concept.id"), nullable=False)
+    target_id = db.Column(db.String, db.ForeignKey("concept.id"), nullable=False)
     relationship = db.Column(db.String, nullable=False)
     status = db.Column(db.String, nullable=False, default="published")
     evidence = db.Column(db.Text, nullable=False, default="")
+    source = db.relationship("Concept", foreign_keys=[source_id], backref=db.backref("outgoing_edges", lazy=True))
+    target = db.relationship("Concept", foreign_keys=[target_id], backref=db.backref("incoming_edges", lazy=True))
 
 
 class QuizItem(db.Model):

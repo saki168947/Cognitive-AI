@@ -1,3 +1,4 @@
+from app.db import db
 from app.models import Concept, Course, GraphEdge
 from app.services.course_service import CourseService
 from app.services.seed_data import seed_courses
@@ -27,6 +28,25 @@ def test_seed_courses_are_idempotent(app):
     assert len({edge["id"] for edge in graph["edges"]}) == 3
     assert Concept.query.count() == len(graph["nodes"])
     assert GraphEdge.query.count() == len(graph["edges"])
+
+
+def test_seed_courses_preserve_user_authored_content(app):
+    seed_courses()
+    db.session.add(Course(id="custom-course", title="教师自建课程", summary=""))
+    db.session.add(
+        Concept(
+            id="concept-custom",
+            course_id="custom-course",
+            label="Custom Concept",
+            definition="Teacher authored content.",
+        )
+    )
+    db.session.commit()
+
+    seed_courses()
+
+    assert db.session.get(Course, "custom-course") is not None
+    assert db.session.get(Concept, "concept-custom") is not None
 
 
 def test_seed_courses_include_cross_course_concepts(app):
@@ -61,3 +81,37 @@ def test_brain_cog_intro_graph_includes_human_attention(app):
     assert "Human Attention" in labels
     assert "Heuristic Search" not in labels
     assert "Transformer Attention" not in labels
+
+
+def test_course_graph_skips_edges_with_missing_endpoints(app):
+    seed_courses()
+    db.session.add(
+        GraphEdge(
+            id="edge-dangling",
+            course_id="ai-intro",
+            source_id="concept-search",
+            target_id="concept-missing",
+            relationship="RELATED_TO",
+            evidence="Invalid graph draft.",
+        )
+    )
+    db.session.commit()
+
+    graph = CourseService.get_graph("ai-intro")
+    edge_ids = {edge["id"] for edge in graph["edges"]}
+
+    assert "edge-dangling" not in edge_ids
+
+
+def test_course_graph_skips_edges_with_unpublished_endpoints(app):
+    seed_courses()
+    human_attention = db.session.get(Concept, "concept-human-attention")
+    human_attention.status = "draft"
+    db.session.commit()
+
+    graph = CourseService.get_graph("ai-intro")
+    edge_ids = {edge["id"] for edge in graph["edges"]}
+    node_ids = {node["id"] for node in graph["nodes"]}
+
+    assert "edge-attention-related" not in edge_ids
+    assert "concept-human-attention" not in node_ids

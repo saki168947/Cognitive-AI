@@ -1,6 +1,8 @@
+from sqlalchemy import or_
+from sqlalchemy.orm import aliased
+
 from app.db import db
 from app.models import Chapter, Concept, Course, GraphEdge, QuizItem
-from sqlalchemy import or_
 
 
 class CourseService:
@@ -10,7 +12,7 @@ class CourseService:
 
     @staticmethod
     def get_course(course_id):
-        return Course.query.get(course_id)
+        return db.session.get(Course, course_id)
 
     @staticmethod
     def get_course_detail(course_id):
@@ -55,11 +57,22 @@ class CourseService:
 
     @staticmethod
     def get_graph(course_id=None):
-        edges_query = GraphEdge.query.filter_by(status="published")
+        SourceConcept = aliased(Concept)
+        TargetConcept = aliased(Concept)
+        edges_query = (
+            db.session.query(GraphEdge)
+            .join(SourceConcept, GraphEdge.source_id == SourceConcept.id)
+            .join(TargetConcept, GraphEdge.target_id == TargetConcept.id)
+            .filter(
+                GraphEdge.status == "published",
+                SourceConcept.status == "published",
+                TargetConcept.status == "published",
+            )
+        )
         concepts_query = Concept.query.filter_by(status="published")
 
         if course_id:
-            edges = edges_query.filter_by(course_id=course_id).all()
+            edges = edges_query.filter(GraphEdge.course_id == course_id).all()
             connected_concept_ids = {
                 concept_id
                 for edge in edges
@@ -97,10 +110,3 @@ class CourseService:
                 for edge in edges
             ],
         }
-
-    @staticmethod
-    def reset_all(commit=True):
-        for model in (QuizItem, GraphEdge, Concept, Chapter, Course):
-            db.session.query(model).delete()
-        if commit:
-            db.session.commit()
