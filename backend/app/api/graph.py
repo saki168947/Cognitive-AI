@@ -1,0 +1,13 @@
+from flask import jsonify, request
+
+from app.api import api_bp
+from app.services.course_service import CourseService
+from app.services.seed_data import seed_courses
+
+
+@api_bp.get("/graph")
+def get_graph():
+    if not CourseService.list_courses():
+        seed_courses()
+    course_id = request.args.get("course_id")
+    return jsonify({"success": True, "data": CourseService.get_graph(course_id=course_id)})
