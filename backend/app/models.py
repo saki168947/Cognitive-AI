@@ -25,6 +25,25 @@ class Chapter(db.Model):
     course = db.relationship("Course", backref=db.backref("chapters", lazy=True))
 
 
+class LearningActivity(db.Model):
+    id = db.Column(db.String, primary_key=True)
+    course_id = db.Column(db.String, db.ForeignKey("course.id"), nullable=False)
+    chapter_id = db.Column(db.String, db.ForeignKey("chapter.id"), nullable=True)
+    title = db.Column(db.String, nullable=False)
+    activity_type = db.Column(db.String, nullable=False, default="reading")
+    summary = db.Column(db.Text, nullable=False, default="")
+    status = db.Column(db.String, nullable=False, default="draft")
+    provider = db.Column(db.String, nullable=False, default="manual")
+    launch_url = db.Column(db.Text, nullable=False, default="")
+    config_json = db.Column(db.Text, nullable=False, default="{}")
+    linked_concept_ids_json = db.Column(db.Text, nullable=False, default="[]")
+    estimated_minutes = db.Column(db.Integer, nullable=False, default=20)
+    release_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    course = db.relationship("Course", backref=db.backref("activities", lazy=True))
+    chapter = db.relationship("Chapter", backref=db.backref("activities", lazy=True))
+
+
 class Concept(db.Model):
     id = db.Column(db.String, primary_key=True)
     course_id = db.Column(db.String, db.ForeignKey("course.id"), nullable=False)
