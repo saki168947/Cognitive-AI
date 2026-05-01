@@ -43,6 +43,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { normalizeObjectives } from './chapterWorkspace';
 
 const props = defineProps({
   chapter: {
@@ -53,6 +54,6 @@ const props = defineProps({
 
 defineEmits(['select-question']);
 
-const objectives = computed(() => Array.isArray(props.chapter.objectives) ? props.chapter.objectives : []);
+const objectives = computed(() => normalizeObjectives(props.chapter.objectives));
 const quizItems = computed(() => Array.isArray(props.chapter.quiz_items) ? props.chapter.quiz_items : []);
 </script>

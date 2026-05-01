@@ -47,7 +47,7 @@
         <ChapterWorkspace
           v-else-if="activeChapter"
           :chapter="activeChapter"
-          @select-question="selectedQuestion = $event"
+          @select-question="selectTutorQuestion"
         />
         <div v-else class="panel">
           <p class="status-message">Select a chapter to begin.</p>
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { getChapter, getCourse } from '../api/courses';
 import AITutorPanel from '../components/AITutorPanel.vue';
 import ChapterWorkspace from '../components/ChapterWorkspace.vue';
@@ -156,5 +156,11 @@ async function loadChapter(chapterId) {
       chapterLoading.value = false;
     }
   }
+}
+
+async function selectTutorQuestion(question) {
+  selectedQuestion.value = '';
+  await nextTick();
+  selectedQuestion.value = question;
 }
 </script>

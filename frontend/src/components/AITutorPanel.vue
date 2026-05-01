@@ -45,6 +45,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { askTutor } from '../api/tutor';
+import { createRequestSequence } from './tutorState';
 
 const props = defineProps({
   courseId: {
@@ -67,6 +68,7 @@ const error = ref('');
 const answer = ref('');
 const citations = ref([]);
 const insufficientEvidence = ref(false);
+const requestSequence = createRequestSequence();
 
 const isAskDisabled = computed(() => loading.value || question.value.trim().length === 0);
 const hasTutorResult = computed(() => Boolean(answer.value || insufficientEvidence.value || citations.value.length));
@@ -80,6 +82,18 @@ watch(
   }
 );
 
+watch(
+  () => [props.courseId, props.chapterId],
+  () => {
+    requestSequence.invalidate();
+    loading.value = false;
+    error.value = '';
+    answer.value = '';
+    citations.value = [];
+    insufficientEvidence.value = false;
+  }
+);
+
 async function submitQuestion() {
   if (isAskDisabled.value) {
     return;
@@ -90,6 +104,7 @@ async function submitQuestion() {
   answer.value = '';
   citations.value = [];
   insufficientEvidence.value = false;
+  const requestId = requestSequence.next();
 
   try {
     const result = await askTutor({
@@ -97,14 +112,21 @@ async function submitQuestion() {
       course_id: props.courseId,
       chapter_id: props.chapterId || undefined
     });
+    if (!requestSequence.isCurrent(requestId)) {
+      return;
+    }
 
     answer.value = result?.answer || '';
     citations.value = Array.isArray(result?.citations) ? result.citations : [];
     insufficientEvidence.value = Boolean(result?.insufficient_evidence || result?.insufficientEvidence);
   } catch (caughtError) {
-    error.value = caughtError?.message || 'Unable to ask the tutor.';
+    if (requestSequence.isCurrent(requestId)) {
+      error.value = caughtError?.message || 'Unable to ask the tutor.';
+    }
   } finally {
-    loading.value = false;
+    if (requestSequence.isCurrent(requestId)) {
+      loading.value = false;
+    }
   }
 }
 

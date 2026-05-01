@@ -11,6 +11,8 @@ const { default: apiClient } = await import('./client');
 const { listCourses, getCourse, getChapter } = await import('./courses');
 const { getGraph } = await import('./graph');
 const { askTutor } = await import('./tutor');
+const { normalizeObjectives } = await import('../components/chapterWorkspace');
+const { createRequestSequence } = await import('../components/tutorState');
 
 describe('course workspace API wrappers', () => {
   beforeEach(() => {
@@ -55,5 +57,24 @@ describe('course workspace API wrappers', () => {
     await expect(askTutor(payload)).resolves.toBe(answer);
 
     expect(apiClient.post).toHaveBeenCalledWith('/api/tutor/ask', payload);
+  });
+
+  it('normalizes backend objective strings for chapter display', () => {
+    expect(normalizeObjectives('Understand attention and working memory.')).toEqual([
+      'Understand attention and working memory.'
+    ]);
+    expect(normalizeObjectives(['First', 'Second'])).toEqual(['First', 'Second']);
+  });
+
+  it('tracks latest tutor requests so stale responses can be ignored', () => {
+    const sequence = createRequestSequence();
+    const first = sequence.next();
+    const second = sequence.next();
+
+    expect(sequence.isCurrent(first)).toBe(false);
+    expect(sequence.isCurrent(second)).toBe(true);
+
+    sequence.invalidate();
+    expect(sequence.isCurrent(second)).toBe(false);
   });
 });
