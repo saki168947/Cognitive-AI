@@ -62,3 +62,21 @@ class ReviewItem(db.Model):
     reviewer = db.Column(db.String, nullable=False, default="")
     decision_notes = db.Column(db.Text, nullable=False, default="")
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+
+
+class Material(db.Model):
+    id = db.Column(db.String, primary_key=True)
+    course_id = db.Column(db.String, db.ForeignKey("course.id"), nullable=False)
+    filename = db.Column(db.String, nullable=False)
+    path = db.Column(db.String, nullable=False)
+    parser_status = db.Column(db.String, nullable=False, default="uploaded")
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    course = db.relationship("Course", backref=db.backref("materials", lazy=True))
+
+
+class Chunk(db.Model):
+    id = db.Column(db.String, primary_key=True)
+    material_id = db.Column(db.String, db.ForeignKey("material.id"), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    citation_locator = db.Column(db.String, nullable=False, default="")
+    material = db.relationship("Material", backref=db.backref("chunks", lazy=True))
