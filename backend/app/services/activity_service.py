@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from app.db import db
 from app.models import Chapter, Course, LearningActivity
@@ -87,6 +88,10 @@ class ActivityService:
             raise ValueError("status is not supported.")
 
         activity_id = _required_string(data, "id")
+        config = _optional_config(data)
+        linked_concept_ids = _optional_linked_concept_ids(data)
+        estimated_minutes = _optional_estimated_minutes(data)
+        release_at = _optional_release_at(data)
         activity = LearningActivity(
             id=activity_id,
             course_id=course.id,
@@ -97,9 +102,10 @@ class ActivityService:
             status=status,
             provider=_optional_string(data, "provider") or "manual",
             launch_url=_optional_string(data, "launch_url"),
-            config_json=json.dumps(data.get("config") or {}, ensure_ascii=False),
-            linked_concept_ids_json=json.dumps(data.get("linked_concept_ids") or [], ensure_ascii=False),
-            estimated_minutes=int(data.get("estimated_minutes") or 20),
+            config_json=json.dumps(config, ensure_ascii=False),
+            linked_concept_ids_json=json.dumps(linked_concept_ids, ensure_ascii=False),
+            estimated_minutes=estimated_minutes,
+            release_at=release_at,
         )
         db.session.add(activity)
         db.session.commit()
@@ -133,3 +139,42 @@ def _optional_string(data, key):
     if not isinstance(value, str):
         raise ValueError(f"{key} must be a string.")
     return value.strip()
+
+
+def _optional_config(data):
+    value = data.get("config")
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("config must be an object.")
+    return value
+
+
+def _optional_linked_concept_ids(data):
+    value = data.get("linked_concept_ids")
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError("linked_concept_ids must be a list of strings.")
+    return value
+
+
+def _optional_estimated_minutes(data):
+    value = data.get("estimated_minutes")
+    if value is None:
+        return 20
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError("estimated_minutes must be a positive integer.")
+    return value
+
+
+def _optional_release_at(data):
+    value = data.get("release_at")
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("release_at must be an ISO 8601 string.")
+    try:
+        return datetime.fromisoformat(value.strip())
+    except ValueError as exc:
+        raise ValueError("release_at must be an ISO 8601 string.") from exc
