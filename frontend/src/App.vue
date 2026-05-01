@@ -1,16 +1,13 @@
-<template>
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Primary navigation">
-      <RouterLink class="brand" to="/">Cognitive AI</RouterLink>
-      <nav class="nav-links">
-        <RouterLink to="/">Dashboard</RouterLink>
-        <RouterLink to="/courses/ai-intro">AI Intro</RouterLink>
-        <RouterLink to="/teacher">Teacher</RouterLink>
-      </nav>
-    </aside>
+<script setup>
+import AppShell from './components/AppShell.vue';
+</script>
 
-    <main class="main-panel">
-      <RouterView />
-    </main>
-  </div>
+<template>
+  <AppShell>
+    <RouterView v-slot="{ Component, route }">
+      <transition name="route-fade" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </transition>
+    </RouterView>
+  </AppShell>
 </template>

@@ -16,17 +16,30 @@
         <dd>{{ activity.estimated_minutes || 20 }} 分钟</dd>
       </div>
     </dl>
+    <RouterLink v-if="coursePath" :to="coursePath" class="activity-card-link">
+      打开课程工作区
+    </RouterLink>
+    <span v-else class="activity-card-link activity-card-link--disabled">
+      等待课程关联
+    </span>
   </article>
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import { activityTypeLabel } from '../views/activityState';
 
-defineProps({
+const props = defineProps({
   activity: {
     type: Object,
     required: true
   }
+});
+
+const coursePath = computed(() => {
+  const courseId = props.activity.course_id || props.activity.courseId;
+  return courseId ? `/courses/${courseId}` : '';
 });
 </script>
 
@@ -100,5 +113,16 @@ defineProps({
   margin: 0;
   color: var(--text-2);
   font-size: 0.88rem;
+}
+
+.activity-card-link {
+  justify-self: start;
+  color: var(--accent-cyan);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.activity-card-link--disabled {
+  color: var(--text-4);
 }
 </style>

@@ -60,7 +60,7 @@ onMounted(async () => {
       </div>
 
       <RouterLink :to="primaryCoursePath" class="dashboard-primary-action">
-        <span>{{ primaryActivity ? '继续下一项活动' : '进入课程工作区' }}</span>
+        <span>{{ primaryActivity ? '打开活动课程工作区' : '进入课程工作区' }}</span>
         <strong>{{ primaryActivity?.title || primaryCourse?.title || '暂无课程' }}</strong>
       </RouterLink>
     </section>
@@ -99,6 +99,7 @@ onMounted(async () => {
         </div>
         <ActivityTimeline
           :activities="nextActivities"
+          :loading="loading"
           empty-text="暂无已发布活动。请到教师工作室发布课件、实验或代码训练。"
         />
       </section>
@@ -164,7 +165,8 @@ onMounted(async () => {
 
         <div class="queue-list">
           <p class="queue-heading">近期草稿</p>
-          <ul v-if="draftActivities.length > 0">
+          <p v-if="loading" class="status-message">正在加载草稿活动...</p>
+          <ul v-else-if="draftActivities.length > 0">
             <li v-for="activity in draftActivities" :key="activity.id">
               <span>{{ activity.title || activity.id }}</span>
               <small>{{ activity.status || 'draft' }}</small>
@@ -175,7 +177,8 @@ onMounted(async () => {
 
         <div class="queue-list">
           <p class="queue-heading">审核事项</p>
-          <ul v-if="pendingReviews.length > 0">
+          <p v-if="loading" class="status-message">正在加载审核事项...</p>
+          <ul v-else-if="pendingReviews.length > 0">
             <li v-for="item in pendingReviews.slice(0, 4)" :key="item.id">
               <span>{{ item.title || item.payload?.title || '未命名材料' }}</span>
               <small>{{ item.status || 'pending' }}</small>

@@ -1,0 +1,108 @@
+:root {
+  --ink-0: #070809;
+  --ink-1: #0b0d10;
+  --ink-2: #11151a;
+  --ink-3: #171d24;
+  --ink-4: #202832;
+  --ink-5: #2b3542;
+  --ink-6: #394657;
+
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --line-medium: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  --fog-1: rgba(76, 201, 185, 0.045);
+  --fog-2: rgba(251, 191, 119, 0.035);
+
+  --text-1: #f5f6fb;
+  --text-2: #c9cad6;
+  --text-3: #8d8ea3;
+  --text-4: #5b5d75;
+  --text-5: #3b3d52;
+
+  --accent-cyan: #5eead4;
+  --accent-cyan-soft: rgba(94, 234, 212, 0.13);
+  --accent-cyan-glow: rgba(94, 234, 212, 0.34);
+
+  --accent-violet: #9fb4ff;
+  --accent-violet-soft: rgba(159, 180, 255, 0.12);
+  --accent-violet-glow: rgba(159, 180, 255, 0.28);
+
+  --accent-amber: #fbbf77;
+  --accent-rose: #fb7299;
+  --accent-mint: #5eead4;
+
+  --signal-success: #5eead4;
+  --signal-warning: #fbbf77;
+  --signal-danger: #fb7299;
+
+  --font-display: "Aptos Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Aptos", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --tracking-tight: 0;
+  --tracking-display: 0;
+  --tracking-mono: 0;
+  --tracking-kicker: 0.12em;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 72px;
+  --space-11: 96px;
+  --space-12: 128px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 12px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 30px 60px rgba(0, 0, 0, 0.55), 0 8px 16px rgba(0, 0, 0, 0.35);
+  --shadow-glow-cyan: 0 0 80px -10px var(--accent-cyan-glow);
+  --shadow-glow-violet: 0 0 80px -10px var(--accent-violet-glow);
+
+  --inner-gloss: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --inner-edge: inset 0 0 0 1px var(--line-medium);
+
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 360ms;
+  --dur-4: 560ms;
+  --dur-5: 820ms;
+  --dur-6: 1200ms;
+
+  --grid-max: 1240px;
+  --shell-pad-x: clamp(20px, 5vw, 64px);
+  --hero-height: min(760px, 74svh);
+
+  --nav-height: 64px;
+  --nav-blur: saturate(160%) blur(18px);
+
+  --grain-opacity: 0.025;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+    --dur-4: 0ms;
+    --dur-5: 0ms;
+    --dur-6: 0ms;
+  }
+}

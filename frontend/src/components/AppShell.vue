@@ -231,8 +231,7 @@ function isActive(link) {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.nav-link[data-active="true"],
-.nav-link .course-switcher-trigger[data-active="true"] {
+.nav-link[data-active="true"] {
   color: var(--text-1);
 }
 
@@ -270,152 +269,6 @@ function isActive(link) {
 
 .nav-link:hover .nav-link-glow {
   opacity: 1;
-}
-
-.course-switcher {
-  position: relative;
-  padding: 0;
-}
-
-.course-switcher-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: var(--radius-full);
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  cursor: pointer;
-  position: relative;
-}
-
-.course-switcher-trigger .caret {
-  width: 10px;
-  height: 10px;
-  color: var(--text-3);
-  transition: transform var(--dur-2) var(--ease-out-expo);
-}
-
-.course-switcher-trigger[aria-expanded="true"] .caret {
-  transform: rotate(180deg);
-  color: var(--text-1);
-}
-
-.course-menu {
-  position: absolute;
-  top: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 280px;
-  padding: 12px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(180deg, rgba(28, 28, 43, 0.96), rgba(13, 13, 21, 0.96));
-  box-shadow:
-    var(--shadow-lg),
-    var(--inner-edge),
-    var(--inner-gloss);
-  backdrop-filter: var(--nav-blur);
-  -webkit-backdrop-filter: var(--nav-blur);
-}
-
-.course-menu::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  background: rgba(28, 28, 43, 0.96);
-  border-left: 1px solid var(--line-medium);
-  border-top: 1px solid var(--line-medium);
-  transform: translateX(-50%) rotate(45deg);
-}
-
-.course-menu-kicker {
-  margin: 4px 8px 8px;
-  display: block;
-}
-
-.course-menu-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.course-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--text-2);
-  font-size: 13.5px;
-  transition:
-    background var(--dur-1) var(--ease-out-expo),
-    color var(--dur-1) var(--ease-out-expo),
-    transform var(--dur-2) var(--ease-out-expo);
-}
-
-.course-menu-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-1);
-  transform: translateX(2px);
-}
-
-.course-menu-item[data-active="true"] {
-  background: var(--accent-cyan-soft);
-  color: var(--accent-cyan);
-}
-
-.course-menu-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-  flex: 0 0 auto;
-  box-shadow: 0 0 8px var(--accent-cyan-glow);
-}
-
-.course-menu-title {
-  flex: 1 1 auto;
-  font-weight: 500;
-}
-
-.course-menu-arrow {
-  color: var(--text-4);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  transition: transform var(--dur-2) var(--ease-out-expo), color var(--dur-2) var(--ease-out-expo);
-}
-
-.course-menu-item:hover .course-menu-arrow {
-  color: var(--accent-cyan);
-  transform: translateX(3px);
-}
-
-.course-menu-empty {
-  padding: 12px 10px;
-  color: var(--text-4);
-  font-size: 13px;
-  text-align: center;
-}
-
-.menu-enter-active,
-.menu-leave-active {
-  transition:
-    opacity var(--dur-2) var(--ease-out-expo),
-    transform var(--dur-3) var(--ease-spring);
-  transform-origin: top center;
-}
-
-.menu-enter-from,
-.menu-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-6px) scale(0.96);
 }
 
 .nav-trailing {
@@ -468,19 +321,54 @@ function isActive(link) {
 }
 
 @media (max-width: 880px) {
-  .nav-link:not(.course-switcher),
-  .brand-suffix {
+  .brand-suffix,
+  .workspace-pill {
     display: none;
   }
 
   .nav-inner {
     gap: var(--space-3);
   }
+
+  .nav-links {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .nav-link {
+    padding: 0 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
 }
 
-@media (max-width: 560px) {
-  .course-switcher {
+@media (max-width: 640px) {
+  .brand-name,
+  .nav-trailing {
     display: none;
+  }
+
+  .nav-inner {
+    justify-content: flex-start;
+  }
+
+  .nav-links {
+    justify-content: flex-end;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-link {
+    padding: 0 8px;
+    font-size: 12px;
   }
 }
 </style>
