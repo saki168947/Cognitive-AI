@@ -13,6 +13,15 @@ def test_list_courses_returns_seed_courses(client, app):
     assert len(payload["data"]) == 2
 
 
+def test_list_courses_auto_seeds_when_empty(client):
+    res = client.get("/api/courses")
+    payload = res.get_json()
+
+    assert res.status_code == 200
+    assert payload["success"] is True
+    assert len(payload["data"]) == 2
+
+
 def test_get_course_detail_includes_chapters(client, app):
     with app.app_context():
         seed_courses()
@@ -23,3 +32,16 @@ def test_get_course_detail_includes_chapters(client, app):
     assert res.status_code == 200
     assert payload["data"]["id"] == "ai-intro"
     assert payload["data"]["chapters"][0]["id"] == "ai-search"
+
+
+def test_get_chapter_detail_includes_quiz_items(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.get("/api/chapters/ai-search")
+    payload = res.get_json()
+
+    assert res.status_code == 200
+    assert payload["success"] is True
+    assert payload["data"]["id"] == "ai-search"
+    assert payload["data"]["quiz_items"][0]["id"] == "quiz-ai-search-1"

@@ -14,6 +14,16 @@ def test_graph_endpoint_returns_nodes_and_edges(client, app):
     assert any(edge["relationship"] == "RELATED_TO" for edge in payload["data"]["edges"])
 
 
+def test_graph_endpoint_auto_seeds_when_empty(client):
+    res = client.get("/api/graph")
+    payload = res.get_json()
+
+    assert res.status_code == 200
+    assert payload["success"] is True
+    assert any(node["label"] == "Transformer Attention" for node in payload["data"]["nodes"])
+    assert any(edge["relationship"] == "RELATED_TO" for edge in payload["data"]["edges"])
+
+
 def test_graph_endpoint_scopes_nodes_by_course(client, app):
     with app.app_context():
         seed_courses()

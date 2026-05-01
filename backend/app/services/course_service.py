@@ -16,7 +16,7 @@ class CourseService:
 
     @staticmethod
     def get_course_detail(course_id):
-        course = Course.query.get_or_404(course_id)
+        course = db.get_or_404(Course, course_id)
         chapters = Chapter.query.filter_by(course_id=course_id).order_by(Chapter.order.asc()).all()
         return {
             "id": course.id,
@@ -36,7 +36,7 @@ class CourseService:
 
     @staticmethod
     def get_chapter(chapter_id):
-        chapter = Chapter.query.get_or_404(chapter_id)
+        chapter = db.get_or_404(Chapter, chapter_id)
         quiz_items = QuizItem.query.filter_by(chapter_id=chapter_id).all()
         return {
             "id": chapter.id,
