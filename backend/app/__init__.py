@@ -1,3 +1,6 @@
+import importlib
+import os
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -19,6 +22,13 @@ def create_app(test_config=None):
     @app.get("/health")
     def health():
         return jsonify({"status": "ok"})
+
+    os.makedirs(app.instance_path, exist_ok=True)
+    try:
+        importlib.import_module(".models", __name__)
+    except ModuleNotFoundError as exc:
+        if exc.name != f"{__name__}.models":
+            raise
 
     with app.app_context():
         db.create_all()
