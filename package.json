@@ -1,0 +1,16 @@
+{
+  "name": "cognitive-ai-learning-platform",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "setup": "cd frontend && npm install",
+    "dev": "concurrently --kill-others -n backend,frontend -c green,cyan \"cd backend && uv run python run.py\" \"cd frontend && npm run dev\"",
+    "test": "cd backend && uv run pytest && cd ../frontend && npm test",
+    "test:backend": "cd backend && uv run pytest",
+    "test:frontend": "cd frontend && npm test",
+    "build": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
