@@ -82,3 +82,28 @@ describe('activity state helpers', () => {
     ]).map((item) => item.id)).toEqual(['draft', 'scheduled']);
   });
 });
+
+const { getDashboardSummary } = await import('./dashboard');
+
+describe('dashboard summary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('includes activity totals from the activities API', async () => {
+    apiClient.get.mockResolvedValueOnce([{ id: 'ai-intro', title: 'AI', chapters: [] }]);
+    apiClient.get.mockResolvedValueOnce([]);
+    apiClient.get.mockResolvedValueOnce([
+      { id: 'activity-1', status: 'published', type: 'code_lab' },
+      { id: 'activity-2', status: 'draft', type: 'lecture_deck' }
+    ]);
+    apiClient.get.mockResolvedValueOnce({ nodes: [], edges: [] });
+
+    const summary = await getDashboardSummary();
+
+    expect(summary.totals.activities).toBe(2);
+    expect(summary.totals.publishedActivities).toBe(1);
+    expect(summary.totals.draftActivities).toBe(1);
+    expect(summary.nextActivities[0].id).toBe('activity-1');
+  });
+});
