@@ -34,8 +34,14 @@ def list_course_activities(course_id):
 
 @api_bp.post("/activities")
 def create_activity():
+    payload = request.get_json(silent=True)
+    if payload is None:
+        payload = {}
+    if not isinstance(payload, dict):
+        return jsonify({"success": False, "error": "request body must be an object."}), 400
+
     try:
-        activity = ActivityService.create_activity(request.get_json(silent=True) or {})
+        activity = ActivityService.create_activity(payload)
     except ValueError as exc:
         return jsonify({"success": False, "error": str(exc)}), 400
 

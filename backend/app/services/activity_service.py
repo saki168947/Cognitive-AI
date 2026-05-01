@@ -88,6 +88,9 @@ class ActivityService:
             raise ValueError("status is not supported.")
 
         activity_id = _required_string(data, "id")
+        if db.session.get(LearningActivity, activity_id):
+            raise ValueError("id already exists.")
+
         config = _optional_config(data)
         linked_concept_ids = _optional_linked_concept_ids(data)
         estimated_minutes = _optional_estimated_minutes(data)

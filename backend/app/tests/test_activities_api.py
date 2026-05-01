@@ -118,6 +118,20 @@ def test_activity_service_create_activity_rejects_invalid_estimated_minutes(app,
             })
 
 
+def test_activity_service_create_activity_rejects_duplicate_id(app):
+    with app.app_context():
+        seed_courses()
+
+        with pytest.raises(ValueError, match="id"):
+            ActivityService.create_activity({
+                "id": "activity-ai-search-deck",
+                "course_id": "ai-intro",
+                "chapter_id": "ai-search",
+                "title": "Duplicate Deck",
+                "type": "lecture_deck",
+            })
+
+
 def test_list_activities_auto_seeds(client):
     res = client.get("/api/activities")
     payload = res.get_json()
@@ -180,3 +194,30 @@ def test_create_activity_rejects_unknown_type(client, app):
     assert res.status_code == 400
     assert payload["success"] is False
     assert "type" in payload["error"]
+
+
+def test_create_activity_rejects_non_object_json(client):
+    res = client.post("/api/activities", json=[])
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload["success"] is False
+    assert "object" in payload["error"]
+
+
+def test_create_activity_rejects_duplicate_id(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.post("/api/activities", json={
+        "id": "activity-ai-search-deck",
+        "course_id": "ai-intro",
+        "chapter_id": "ai-search",
+        "title": "Duplicate Deck",
+        "type": "lecture_deck",
+    })
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload["success"] is False
+    assert "id" in payload["error"]
