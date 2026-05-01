@@ -11,3 +11,4 @@ def handle_not_found(error):
 
 from . import courses  # noqa: E402,F401
 from . import graph  # noqa: E402,F401
+from . import review  # noqa: E402,F401

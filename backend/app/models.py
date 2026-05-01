@@ -51,3 +51,14 @@ class QuizItem(db.Model):
     prompt = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text, nullable=False)
     explanation = db.Column(db.Text, nullable=False, default="")
+
+
+class ReviewItem(db.Model):
+    id = db.Column(db.String, primary_key=True)
+    title = db.Column(db.String, nullable=False)
+    item_type = db.Column(db.String, nullable=False, default="graph_suggestion")
+    status = db.Column(db.String, nullable=False, default="draft")
+    payload_json = db.Column(db.Text, nullable=False, default="{}")
+    reviewer = db.Column(db.String, nullable=False, default="")
+    decision_notes = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
