@@ -58,6 +58,15 @@
           :chapter-id="activeChapter?.id || ''"
           :initial-question="selectedQuestion"
         />
+
+        <div v-if="graphLoading" class="panel">
+          <p class="status-message">Loading graph...</p>
+        </div>
+        <template v-else-if="graphError">
+          <p class="status-message warning">{{ graphError }}</p>
+          <GraphPanel :graph="graph" />
+        </template>
+        <GraphPanel v-else :graph="graph" />
       </main>
     </div>
   </section>
@@ -66,8 +75,10 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { getChapter, getCourse } from '../api/courses';
+import { getGraph } from '../api/graph';
 import AITutorPanel from '../components/AITutorPanel.vue';
 import ChapterWorkspace from '../components/ChapterWorkspace.vue';
+import GraphPanel from '../components/GraphPanel.vue';
 
 const props = defineProps({
   courseId: {
@@ -78,11 +89,14 @@ const props = defineProps({
 
 const course = ref(null);
 const activeChapter = ref(null);
+const graph = ref({ nodes: [], edges: [] });
 const selectedQuestion = ref('');
 const courseLoading = ref(false);
 const chapterLoading = ref(false);
+const graphLoading = ref(false);
 const courseError = ref('');
 const chapterError = ref('');
+const graphError = ref('');
 let chapterRequestId = 0;
 let courseRequestId = 0;
 
@@ -101,20 +115,38 @@ async function loadCourse() {
   const requestId = courseRequestId + 1;
   courseRequestId = requestId;
   courseLoading.value = true;
+  graphLoading.value = true;
   courseError.value = '';
   chapterError.value = '';
+  graphError.value = '';
   course.value = null;
   activeChapter.value = null;
+  graph.value = { nodes: [], edges: [] };
   selectedQuestion.value = '';
   chapterRequestId += 1;
 
   try {
-    const result = await getCourse(props.courseId);
+    const [courseResult, graphResult] = await Promise.allSettled([
+      getCourse(props.courseId),
+      getGraph(props.courseId)
+    ]);
     if (requestId !== courseRequestId) {
       return;
     }
 
-    course.value = result || null;
+    if (graphResult.status === 'fulfilled') {
+      graph.value = graphResult.value || { nodes: [], edges: [] };
+    } else {
+      graph.value = { nodes: [], edges: [] };
+      graphError.value = graphResult.reason?.message || 'Unable to load knowledge graph.';
+    }
+    graphLoading.value = false;
+
+    if (courseResult.status === 'rejected') {
+      throw courseResult.reason;
+    }
+
+    course.value = courseResult.value || null;
     const firstChapter = chapters.value[0];
 
     if (firstChapter?.id) {
@@ -124,11 +156,13 @@ async function loadCourse() {
     if (requestId === courseRequestId) {
       course.value = null;
       activeChapter.value = null;
+      graph.value = { nodes: [], edges: [] };
       courseError.value = caughtError?.message || 'Unable to load course.';
     }
   } finally {
     if (requestId === courseRequestId) {
       courseLoading.value = false;
+      graphLoading.value = false;
     }
   }
 }
