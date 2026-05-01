@@ -12,6 +12,10 @@ const courses = computed(() => summary.value?.courses ?? []);
 const nextActivities = computed(() => summary.value?.nextActivities ?? []);
 const draftActivities = computed(() => summary.value?.draftActivities ?? []);
 const pendingReviews = computed(() => summary.value?.pendingReviews ?? []);
+const dashboardErrors = computed(() => [
+  error.value,
+  ...(summary.value?.errors ?? [])
+].filter(Boolean));
 const totals = computed(() => summary.value?.totals ?? {
   courseCount: 0,
   activities: 0,
@@ -32,7 +36,17 @@ const primaryCourse = computed(() => {
   return courses.value[0] || null;
 });
 const primaryCoursePath = computed(() =>
-  primaryCourse.value ? `/courses/${primaryCourse.value.id}` : '/'
+  primaryCourse.value ? `/courses/${primaryCourse.value.id}` : ''
+);
+
+const hasCourseError = computed(() =>
+  dashboardErrors.value.some((message) => message.includes('课程'))
+);
+const hasActivityError = computed(() =>
+  dashboardErrors.value.some((message) => message.includes('学习活动'))
+);
+const hasReviewError = computed(() =>
+  dashboardErrors.value.some((message) => message.includes('审核队列'))
 );
 
 onMounted(async () => {
@@ -59,14 +73,20 @@ onMounted(async () => {
         </p>
       </div>
 
-      <RouterLink :to="primaryCoursePath" class="dashboard-primary-action">
+      <RouterLink v-if="primaryCoursePath" :to="primaryCoursePath" class="dashboard-primary-action">
         <span>{{ primaryActivity ? '打开活动课程工作区' : '进入课程工作区' }}</span>
         <strong>{{ primaryActivity?.title || primaryCourse?.title || '暂无课程' }}</strong>
       </RouterLink>
+      <span v-else class="dashboard-primary-action dashboard-primary-action--disabled">
+        <span>{{ loading ? '正在加载课程' : '暂无课程工作区' }}</span>
+        <strong>{{ loading ? '请稍候' : '请先发布课程活动' }}</strong>
+      </span>
     </section>
 
-    <div v-if="error" class="shell-container">
-      <p class="status-message error">{{ error }}</p>
+    <div v-if="dashboardErrors.length" class="shell-container dashboard-errors">
+      <p v-for="message in dashboardErrors" :key="message" class="status-message error">
+        {{ message }}
+      </p>
     </div>
 
     <section class="shell-container dashboard-grid" aria-label="课程运营概览">
@@ -100,7 +120,7 @@ onMounted(async () => {
         <ActivityTimeline
           :activities="nextActivities"
           :loading="loading"
-          empty-text="暂无已发布活动。请到教师工作室发布课件、实验或代码训练。"
+          :empty-text="hasActivityError ? '学习活动数据暂不可用。' : '暂无已发布活动。请到教师工作室发布课件、实验或代码训练。'"
         />
       </section>
 
@@ -140,6 +160,7 @@ onMounted(async () => {
           </RouterLink>
         </div>
         <p v-else-if="loading" class="status-message">正在加载课程...</p>
+        <p v-else-if="hasCourseError" class="status-message warning">课程数据暂不可用。</p>
         <p v-else class="status-message">暂无可用课程。</p>
       </section>
 
@@ -172,6 +193,7 @@ onMounted(async () => {
               <small>{{ activity.status || 'draft' }}</small>
             </li>
           </ul>
+          <p v-else-if="hasActivityError" class="status-message warning">草稿活动数据暂不可用。</p>
           <p v-else class="status-message">暂无草稿活动。</p>
         </div>
 
@@ -184,6 +206,7 @@ onMounted(async () => {
               <small>{{ item.status || 'pending' }}</small>
             </li>
           </ul>
+          <p v-else-if="hasReviewError" class="status-message warning">审核队列数据暂不可用。</p>
           <p v-else class="status-message">暂无待审核材料。</p>
         </div>
       </section>
@@ -248,6 +271,23 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dashboard-primary-action--disabled {
+  border-color: var(--line-medium);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-3);
+  cursor: default;
+}
+
+.dashboard-primary-action--disabled span {
+  color: var(--text-4);
+}
+
+.dashboard-errors {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .dashboard-grid {

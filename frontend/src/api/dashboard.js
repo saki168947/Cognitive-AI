@@ -28,6 +28,13 @@ function parseTimestamp(value) {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+function resultError(result, label) {
+  if (result.status === 'fulfilled') {
+    return '';
+  }
+  return `${label}加载失败：${result.reason?.message || '请稍后重试'}`;
+}
+
 export async function getDashboardSummary() {
   const [coursesResult, reviewItemsResult, activitiesResult] = await Promise.allSettled([
     listCourses(),
@@ -35,6 +42,11 @@ export async function getDashboardSummary() {
     listActivities()
   ]);
 
+  const errors = [
+    resultError(coursesResult, '课程'),
+    resultError(reviewItemsResult, '审核队列'),
+    resultError(activitiesResult, '学习活动')
+  ].filter(Boolean);
   const courses = coursesResult.status === 'fulfilled' ? safeArray(coursesResult.value) : [];
   const reviewItems = reviewItemsResult.status === 'fulfilled' ? safeArray(reviewItemsResult.value) : [];
   const activities = activitiesResult.status === 'fulfilled' ? safeArray(activitiesResult.value) : [];
@@ -84,6 +96,7 @@ export async function getDashboardSummary() {
     activities,
     nextActivities: published.slice(0, 6),
     draftActivities: drafts.slice(0, 6),
+    errors,
     pendingReviews,
     recentReviewItems
   };

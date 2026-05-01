@@ -106,4 +106,15 @@ describe('dashboard summary', () => {
     expect(summary.totals.draftActivities).toBe(1);
     expect(summary.nextActivities[0].id).toBe('activity-1');
   });
+
+  it('surfaces dashboard source errors instead of silently treating them as empty data', async () => {
+    apiClient.get.mockRejectedValueOnce(new Error('courses unavailable'));
+    apiClient.get.mockResolvedValueOnce([]);
+    apiClient.get.mockResolvedValueOnce([]);
+
+    const summary = await getDashboardSummary();
+
+    expect(summary.courses).toEqual([]);
+    expect(summary.errors).toEqual(['课程加载失败：courses unavailable']);
+  });
 });
