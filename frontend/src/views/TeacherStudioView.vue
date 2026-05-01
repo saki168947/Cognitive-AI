@@ -56,6 +56,7 @@
         <ReviewQueue
           v-else
           :items="reviewItems"
+          :pending-ids="pendingReviewIds"
           @approve="approveItem"
           @reject="rejectItem"
           @publish="publishItem"
@@ -76,6 +77,7 @@ import {
   rejectReviewItem
 } from '../api/review';
 import ReviewQueue from '../components/ReviewQueue.vue';
+import { createReviewActionTracker, reviewItemCreatedMessage } from './teacherStudioState';
 
 const fallbackCourseId = 'ai-intro';
 
@@ -89,6 +91,8 @@ const itemsLoading = ref(false);
 const uploading = ref(false);
 const error = ref('');
 const message = ref('');
+const pendingReviewIds = ref([]);
+const reviewActionTracker = createReviewActionTracker();
 let reviewRequestId = 0;
 
 const uploadDisabled = computed(() => !selectedCourseId.value || !selectedFile.value || uploading.value);
@@ -155,7 +159,7 @@ async function submitUpload() {
 
   try {
     const created = await uploadMaterial(selectedCourseId.value, selectedFile.value);
-    message.value = `Created review item ${created?.id || ''}`.trim();
+    message.value = reviewItemCreatedMessage(created);
     selectedFile.value = null;
     if (fileInput.value) {
       fileInput.value.value = '';
@@ -169,26 +173,33 @@ async function submitUpload() {
 }
 
 async function approveItem(id) {
-  await runReviewAction(() => approveReviewItem(id));
+  await runReviewAction({ id, run: () => approveReviewItem(id) });
 }
 
 async function rejectItem(id) {
-  await runReviewAction(() => rejectReviewItem(id));
+  await runReviewAction({ id, run: () => rejectReviewItem(id) });
 }
 
 async function publishItem(id) {
-  await runReviewAction(() => publishReviewItem(id));
+  await runReviewAction({ id, run: () => publishReviewItem(id) });
 }
 
 async function runReviewAction(action) {
+  if (!reviewActionTracker.start(action.id)) {
+    return;
+  }
+  pendingReviewIds.value = [...pendingReviewIds.value, action.id];
   error.value = '';
   message.value = '';
 
   try {
-    await action();
+    await action.run();
     await loadReviewItems();
   } catch (caughtError) {
     error.value = caughtError?.message || 'Unable to update review item.';
+  } finally {
+    reviewActionTracker.finish(action.id);
+    pendingReviewIds.value = pendingReviewIds.value.filter((id) => id !== action.id);
   }
 }
 </script>

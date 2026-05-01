@@ -15,6 +15,10 @@ const {
   rejectReviewItem
 } = await import('./review');
 const { uploadMaterial } = await import('./materials');
+const {
+  createReviewActionTracker,
+  reviewItemCreatedMessage
+} = await import('../views/teacherStudioState');
 
 describe('teacher studio API wrappers', () => {
   beforeEach(() => {
@@ -61,5 +65,20 @@ describe('teacher studio API wrappers', () => {
     expect(body).toBeInstanceOf(FormData);
     expect(body.get('course_id')).toBe('ai-intro');
     expect(body.get('file')).toBe(file);
+  });
+
+  it('formats upload responses with backend review_item_id', () => {
+    expect(reviewItemCreatedMessage({ review_item_id: 'review-3' })).toBe('Created review item review-3');
+  });
+
+  it('tracks pending review actions by item id to block duplicate requests', () => {
+    const tracker = createReviewActionTracker();
+
+    expect(tracker.isPending('review-1')).toBe(false);
+    expect(tracker.start('review-1')).toBe(true);
+    expect(tracker.isPending('review-1')).toBe(true);
+    expect(tracker.start('review-1')).toBe(false);
+    tracker.finish('review-1');
+    expect(tracker.isPending('review-1')).toBe(false);
   });
 });

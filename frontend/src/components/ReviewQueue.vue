@@ -8,19 +8,21 @@
           <p class="eyebrow">{{ item.status || 'unknown' }}</p>
           <h2>{{ item.title || item.name || item.id || 'Untitled review item' }}</h2>
         </div>
-        <div class="review-actions" aria-label="Review actions">
+        <div class="review-actions" :aria-label="`Review actions for ${item.id}`">
           <button
             v-if="item.status === 'draft'"
             type="button"
             class="button small"
+            :disabled="isItemPending(item.id)"
             @click="$emit('approve', item.id)"
           >
-            Approve
+            {{ isItemPending(item.id) ? 'Working...' : 'Approve' }}
           </button>
           <button
             v-if="item.status === 'draft'"
             type="button"
             class="button small secondary compact"
+            :disabled="isItemPending(item.id)"
             @click="$emit('reject', item.id)"
           >
             Reject
@@ -29,9 +31,10 @@
             v-if="item.status === 'reviewed'"
             type="button"
             class="button small"
+            :disabled="isItemPending(item.id)"
             @click="$emit('publish', item.id)"
           >
-            Publish
+            {{ isItemPending(item.id) ? 'Working...' : 'Publish' }}
           </button>
         </div>
       </header>
@@ -46,6 +49,10 @@ defineProps({
   items: {
     type: Array,
     default: () => []
+  },
+  pendingIds: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -53,5 +60,9 @@ defineEmits(['approve', 'reject', 'publish']);
 
 function formatPayload(payload) {
   return JSON.stringify(payload ?? {}, null, 2);
+}
+
+function isItemPending(id) {
+  return id ? pendingIds.includes(id) : false;
 }
 </script>
