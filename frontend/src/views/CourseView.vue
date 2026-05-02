@@ -1,6 +1,6 @@
 <template>
   <section class="course-view container">
-    <header class="page-header">
+    <header v-if="courseLoading || courseError || !course" class="page-header">
       <div class="indicator mono">
         <div class="dot"></div>
         COURSE VIEW
