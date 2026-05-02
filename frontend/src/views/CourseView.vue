@@ -1,45 +1,73 @@
 <template>
-  <section class="view">
-    <header class="view-header">
-      <p class="view-kicker">Course</p>
-      <h1 class="view-title">{{ course?.title || course?.name || courseId }}</h1>
-      <p class="view-copy">{{ course?.summary || course?.description || 'Review course material and ask focused questions.' }}</p>
+  <section class="course-view container">
+    <header class="page-header">
+      <div class="indicator mono">
+        <div class="dot"></div>
+        COURSE VIEW
+      </div>
+      <h1 class="display">{{ course?.title || course?.name || courseId }}</h1>
+      <div class="separator"></div>
+      <p class="desc">{{ course?.summary || course?.description || '查看课程材料并提出针对性问题。' }}</p>
     </header>
 
     <div v-if="courseLoading" class="panel">
-      <p class="status-message">Loading course...</p>
+      <p class="status-message">正在加载课程…</p>
     </div>
 
     <div v-else-if="courseError" class="panel">
       <p class="status-message error">{{ courseError }}</p>
-      <button type="button" class="button secondary" @click="loadCourse">Retry</button>
+      <button type="button" class="btn btn-outline" @click="loadCourse">重试</button>
     </div>
 
-    <div v-else-if="course" class="two-col course-layout">
-      <aside class="panel chapter-sidebar">
-        <header class="panel-header">
-          <p class="eyebrow">Syllabus</p>
-          <h2>Chapters</h2>
-        </header>
-
-        <p v-if="chapters.length === 0" class="status-message">No chapters are available.</p>
-        <div v-else class="chapter-list">
-          <button
-            v-for="chapter in chapters"
-            :key="chapter.id"
-            type="button"
-            class="chapter-button"
-            :class="{ active: activeChapter?.id === chapter.id }"
-            @click="loadChapter(chapter.id)"
-          >
-            {{ chapter.title || chapter.name || chapter.id }}
-          </button>
+    <div v-else-if="course" class="course-spatial-shell">
+      <aside class="course-spatial-intro">
+        <p class="kicker course-kicker">COURSE SYLLABUS</p>
+        <h1 class="course-spatial-title">{{ course?.title || course?.name || courseId }}</h1>
+        <div class="course-blue-rule"></div>
+        <p class="course-spatial-copy">
+          {{ course?.summary || course?.description || '沿着章节路径进入阅读、AI 导师、知识图谱与复习任务。' }}
+        </p>
+        <div class="course-vertical-rail" aria-hidden="true">
+          <span class="course-rail-dots">
+            <i v-for="chapter in chapters" :key="chapter.id || chapter.title"></i>
+          </span>
+          <span>CHAPTERS</span>
         </div>
       </aside>
 
-      <main class="workspace-stack">
+      <section class="course-path-stage" aria-label="课程章节路径">
+        <div class="course-path-line line-1"></div>
+        <div class="course-path-line line-2"></div>
+        <div class="course-path-line line-3"></div>
+        <div class="course-path-line line-4"></div>
+
+        <p v-if="chapters.length === 0" class="panel status-message">暂无可用章节。</p>
+        <template v-else>
+          <button
+            v-for="(chapter, index) in chapters"
+            :key="chapter.id || index"
+            type="button"
+            :class="[chapterNodeClass(index), { 'is-active': activeChapter?.id === chapter.id }]"
+            :disabled="!chapter.id"
+            @click="loadChapter(chapter.id)"
+          >
+            <span class="course-node-head">
+              <span class="course-node-number">{{ String(index + 1).padStart(2, '0') }}</span>
+              <span class="course-node-rule"></span>
+              <span class="course-node-pin"></span>
+            </span>
+            <span class="course-node-title">{{ chapterDisplayTitle(chapter) }}</span>
+            <span class="course-node-topics">
+              <span v-for="(topic, topicIndex) in chapterSubtopics(chapter)" :key="topic">
+                <b>{{ index + 1 }}.{{ topicIndex + 1 }}</b>{{ topic }}
+              </span>
+            </span>
+          </button>
+        </template>
+
+        <main class="course-workbench">
         <div v-if="chapterLoading" class="panel">
-          <p class="status-message">Loading chapter...</p>
+          <p class="status-message">正在加载章节…</p>
         </div>
         <div v-else-if="chapterError" class="panel">
           <p class="status-message error">{{ chapterError }}</p>
@@ -50,7 +78,7 @@
           @select-question="selectTutorQuestion"
         />
         <div v-else class="panel">
-          <p class="status-message">Select a chapter to begin.</p>
+          <p class="status-message">请选择一个章节开始。</p>
         </div>
 
         <AITutorPanel
@@ -60,14 +88,15 @@
         />
 
         <div v-if="graphLoading" class="panel">
-          <p class="status-message">Loading graph...</p>
+          <p class="status-message">正在加载图谱…</p>
         </div>
         <template v-else-if="graphError">
           <p class="status-message warning">{{ graphError }}</p>
           <GraphPanel :graph="graph" />
         </template>
         <GraphPanel v-else :graph="graph" />
-      </main>
+        </main>
+      </section>
     </div>
   </section>
 </template>
@@ -79,6 +108,7 @@ import { getGraph } from '../api/graph';
 import AITutorPanel from '../components/AITutorPanel.vue';
 import ChapterWorkspace from '../components/ChapterWorkspace.vue';
 import GraphPanel from '../components/GraphPanel.vue';
+import { chapterDisplayTitle, chapterNodeClass, chapterSubtopics } from './courseViewState';
 
 const props = defineProps({
   courseId: {
@@ -138,7 +168,7 @@ async function loadCourse() {
       graph.value = graphResult.value || { nodes: [], edges: [] };
     } else {
       graph.value = { nodes: [], edges: [] };
-      graphError.value = graphResult.reason?.message || 'Unable to load knowledge graph.';
+      graphError.value = graphResult.reason?.message || '无法加载知识图谱。';
     }
     graphLoading.value = false;
 
@@ -157,7 +187,7 @@ async function loadCourse() {
       course.value = null;
       activeChapter.value = null;
       graph.value = { nodes: [], edges: [] };
-      courseError.value = caughtError?.message || 'Unable to load course.';
+      courseError.value = caughtError?.message || '无法加载课程。';
     }
   } finally {
     if (requestId === courseRequestId) {
@@ -183,7 +213,7 @@ async function loadChapter(chapterId) {
   } catch (caughtError) {
     if (requestId === chapterRequestId) {
       activeChapter.value = null;
-      chapterError.value = caughtError?.message || 'Unable to load chapter.';
+      chapterError.value = caughtError?.message || '无法加载章节。';
     }
   } finally {
     if (requestId === chapterRequestId) {
@@ -198,3 +228,55 @@ async function selectTutorQuestion(question) {
   selectedQuestion.value = question;
 }
 </script>
+
+<style scoped>
+.course-view {
+  padding-top: calc(var(--nav-height) + 60px);
+  padding-bottom: 100px;
+}
+
+.page-header {
+  margin-bottom: 60px;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 24px;
+}
+
+.indicator .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  color: var(--text-1);
+  margin-bottom: 24px;
+}
+
+.separator {
+  width: 40px;
+  height: 2px;
+  background: var(--text-1);
+  margin-bottom: 24px;
+}
+
+.desc {
+  color: var(--text-3);
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 600px;
+}
+
+.course-layout {
+  align-items: start;
+}
+</style>
