@@ -1,37 +1,38 @@
 <template>
-  <aside class="panel tutor-panel">
-    <header class="panel-header">
-      <p class="eyebrow">AI tutor</p>
-      <h2>Ask about this chapter</h2>
+  <aside class="panel tutor-panel course-tool-panel">
+    <header class="panel-header course-tool-header">
+      <p class="kicker">AI Tutor</p>
+      <h2>就本章内容提问</h2>
     </header>
 
     <form class="tutor-form" @submit.prevent="submitQuestion">
-      <label class="field-label" for="tutor-question">Question</label>
+      <label class="field-label" for="tutor-question">问题</label>
       <textarea
         id="tutor-question"
         v-model="question"
-        rows="6"
-        placeholder="Ask a question about the current chapter"
+        class="form-control"
+        rows="5"
+        placeholder="就当前章节提出你的问题"
       />
-      <button type="submit" class="button" :disabled="isAskDisabled">
-        {{ loading ? 'Asking...' : 'Ask' }}
+      <button type="submit" class="btn btn-primary" :disabled="isAskDisabled">
+        {{ loading ? '正在提问…' : '提问' }}
       </button>
     </form>
 
     <p v-if="error" class="status-message error">{{ error }}</p>
-    <p v-if="loading" class="status-message">Preparing answer...</p>
+    <p v-if="loading" class="status-message">正在准备回答…</p>
 
     <section v-if="hasTutorResult" class="tutor-answer">
       <p v-if="insufficientEvidence" class="status-message warning">
-        The tutor could not find enough supporting evidence for a complete answer.
+        导师未能找到足够的支撑证据来给出完整回答。
       </p>
       <template v-if="answer">
-        <h3>Answer</h3>
+        <h3>回答</h3>
         <p>{{ answer }}</p>
       </template>
 
       <div v-if="citations.length" class="citations">
-        <h3>Citations</h3>
+        <h3>引用来源</h3>
         <ul class="clean-list">
           <li v-for="citation in citations" :key="citationKey(citation)">
             {{ citationText(citation) }}
@@ -121,7 +122,7 @@ async function submitQuestion() {
     insufficientEvidence.value = Boolean(result?.insufficient_evidence || result?.insufficientEvidence);
   } catch (caughtError) {
     if (requestSequence.isCurrent(requestId)) {
-      error.value = caughtError?.message || 'Unable to ask the tutor.';
+      error.value = caughtError?.message || '无法向导师提问。';
     }
   } finally {
     if (requestSequence.isCurrent(requestId)) {

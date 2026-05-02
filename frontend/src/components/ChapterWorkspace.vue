@@ -1,37 +1,37 @@
 <template>
-  <article class="panel chapter-workspace">
-    <header class="panel-header">
-      <p class="eyebrow">Chapter</p>
-      <h2>{{ chapter.title || 'Untitled chapter' }}</h2>
+  <article class="panel chapter-workspace course-tool-panel">
+    <header class="panel-header course-tool-header">
+      <p class="kicker">Selected Chapter</p>
+      <h2>{{ chapter.title || '未命名章节' }}</h2>
     </header>
 
     <section v-if="objectives.length" class="content-block">
-      <h3>Objectives</h3>
+      <h3>学习目标</h3>
       <ul class="clean-list objective-list">
         <li v-for="objective in objectives" :key="objective">{{ objective }}</li>
       </ul>
     </section>
 
     <section v-if="chapter.body" class="content-block">
-      <h3>Reading</h3>
+      <h3>阅读材料</h3>
       <p class="chapter-body">{{ chapter.body }}</p>
     </section>
 
     <section v-if="quizItems.length" class="content-block">
-      <h3>Review Questions</h3>
+      <h3>复习题</h3>
       <div class="quiz-list">
         <details v-for="item in quizItems" :key="item.id || item.prompt" class="quiz-item">
           <summary>{{ item.prompt }}</summary>
-          <button type="button" class="button small" @click="$emit('select-question', item.prompt)">
-            Ask tutor
+          <button type="button" class="btn btn-outline btn-sm" @click="$emit('select-question', item.prompt)">
+            问导师
           </button>
           <dl class="quiz-details">
             <template v-if="item.answer">
-              <dt>Answer</dt>
+              <dt>答案</dt>
               <dd>{{ item.answer }}</dd>
             </template>
             <template v-if="item.explanation">
-              <dt>Explanation</dt>
+              <dt>解释</dt>
               <dd>{{ item.explanation }}</dd>
             </template>
           </dl>

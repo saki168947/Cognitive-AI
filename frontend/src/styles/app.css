@@ -341,6 +341,122 @@ textarea.form-control {
   grid-column: 1 / -1;
 }
 
+.course-tool-panel {
+  border-color: var(--border-strong);
+  box-shadow: 0 18px 70px rgba(8, 12, 20, 0.06);
+}
+
+.course-tool-header .kicker {
+  color: var(--primary);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.content-block {
+  display: grid;
+  gap: 12px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-default);
+}
+
+.content-block + .content-block {
+  margin-top: 22px;
+}
+
+.content-block h3,
+.tutor-answer h3 {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.objective-list,
+.clean-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.objective-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+}
+
+.objective-list li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-top: 9px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.chapter-body,
+.tutor-answer p,
+.quiz-details {
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.quiz-list {
+  display: grid;
+  gap: 10px;
+}
+
+.quiz-item {
+  border: 1px solid var(--border-default);
+  padding: 14px;
+}
+
+.quiz-item summary {
+  cursor: pointer;
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.quiz-item .btn {
+  margin-top: 14px;
+}
+
+.quiz-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.quiz-details dt {
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.quiz-details dd {
+  margin: 0;
+}
+
+.tutor-form {
+  display: grid;
+  gap: 12px;
+}
+
+.tutor-answer,
+.citations {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
 /* ── Graph panel ── */
 .graph-stage {
   position: relative;
