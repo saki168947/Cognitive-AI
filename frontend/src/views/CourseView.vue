@@ -21,35 +21,40 @@
 
     <div v-else-if="course" class="course-spatial-shell">
       <aside class="course-spatial-intro">
-        <p class="kicker course-kicker">COURSE SYLLABUS</p>
-        <h1 class="course-spatial-title">{{ course?.title || course?.name || courseId }}</h1>
+        <p class="kicker course-kicker">AI & BRAIN SCIENCE</p>
+        <h1 class="course-spatial-title">SYLLABUS /<br>COURSE<br>CHAPTERS</h1>
         <div class="course-blue-rule"></div>
         <p class="course-spatial-copy">
-          {{ course?.summary || course?.description || '沿着章节路径进入阅读、AI 导师、知识图谱与复习任务。' }}
+          A journey through the principles of intelligence, learning, and the science of the brain.
         </p>
         <div class="course-vertical-rail" aria-hidden="true">
           <span class="course-rail-dots">
-            <i v-for="chapter in chapters" :key="chapter.id || chapter.title"></i>
+            <i v-for="chapter in visualChapters" :key="chapter.id || chapter.title"></i>
           </span>
           <span>CHAPTERS</span>
         </div>
       </aside>
 
-      <section class="course-path-stage" aria-label="课程章节路径">
+      <section id="full-syllabus" class="course-path-stage" aria-label="课程章节路径">
+        <div class="course-top-label mono">COURSE SYLLABUS <span></span></div>
         <div class="course-path-line line-1"></div>
         <div class="course-path-line line-2"></div>
         <div class="course-path-line line-3"></div>
         <div class="course-path-line line-4"></div>
+        <div class="course-path-line line-5"></div>
+        <div class="course-elbow elbow-1"></div>
+        <div class="course-elbow elbow-2"></div>
+        <div class="course-orbit" aria-hidden="true"></div>
 
-        <p v-if="chapters.length === 0" class="panel status-message">暂无可用章节。</p>
+        <p v-if="visualChapters.length === 0" class="panel status-message">暂无可用章节。</p>
         <template v-else>
           <button
-            v-for="(chapter, index) in chapters"
+            v-for="(chapter, index) in visualChapters"
             :key="chapter.id || index"
             type="button"
-            :class="[chapterNodeClass(index), { 'is-active': activeChapter?.id === chapter.id }]"
+            :class="[chapterNodeClass(index), { 'is-active': activeChapterId === chapter.id }]"
             :disabled="!chapter.id"
-            @click="loadChapter(chapter.id)"
+            @click="selectChapter(chapter.id)"
           >
             <span class="course-node-head">
               <span class="course-node-number">{{ String(index + 1).padStart(2, '0') }}</span>
@@ -65,49 +70,15 @@
           </button>
         </template>
 
-        <main class="course-workbench">
-        <div v-if="chapterLoading" class="panel">
-          <p class="status-message">正在加载章节…</p>
-        </div>
-        <div v-else-if="chapterError" class="panel">
-          <p class="status-message error">{{ chapterError }}</p>
-        </div>
-        <ChapterWorkspace
-          v-else-if="activeChapter"
-          :chapter="activeChapter"
-          @select-question="selectTutorQuestion"
-        />
-        <div v-else class="panel">
-          <p class="status-message">请选择一个章节开始。</p>
-        </div>
-
-        <AITutorPanel
-          :course-id="courseId"
-          :chapter-id="activeChapter?.id || ''"
-          :initial-question="selectedQuestion"
-        />
-
-        <div v-if="graphLoading" class="panel">
-          <p class="status-message">正在加载图谱…</p>
-        </div>
-        <template v-else-if="graphError">
-          <p class="status-message warning">{{ graphError }}</p>
-          <GraphPanel :graph="graph" />
-        </template>
-        <GraphPanel v-else :graph="graph" />
-        </main>
+        <a class="course-syllabus-link mono" href="#full-syllabus">VIEW FULL SYLLABUS <span></span></a>
       </section>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { getChapter, getCourse } from '../api/courses';
-import { getGraph } from '../api/graph';
-import AITutorPanel from '../components/AITutorPanel.vue';
-import ChapterWorkspace from '../components/ChapterWorkspace.vue';
-import GraphPanel from '../components/GraphPanel.vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { getCourse } from '../api/courses';
 import { chapterDisplayTitle, chapterNodeClass, chapterSubtopics } from './courseViewState';
 
 const props = defineProps({
@@ -118,19 +89,49 @@ const props = defineProps({
 });
 
 const course = ref(null);
-const activeChapter = ref(null);
-const graph = ref({ nodes: [], edges: [] });
-const selectedQuestion = ref('');
+const activeChapterId = ref('');
 const courseLoading = ref(false);
-const chapterLoading = ref(false);
-const graphLoading = ref(false);
 const courseError = ref('');
-const chapterError = ref('');
-const graphError = ref('');
-let chapterRequestId = 0;
 let courseRequestId = 0;
 
 const chapters = computed(() => Array.isArray(course.value?.chapters) ? course.value.chapters : []);
+const visualChapters = computed(() => {
+  if (chapters.value.length >= 5) {
+    return chapters.value;
+  }
+
+  if (props.courseId === 'ai-intro') {
+    return [
+      {
+        id: 'ai-foundations',
+        title: 'Foundations',
+        sections: ['What is AI?', 'Agents and environments']
+      },
+      {
+        id: 'ai-search',
+        title: 'Search and Problem Solving',
+        sections: ['Problem-Solving Agents', 'Uninformed Search', 'Informed Search', 'Heuristics and Optimization']
+      },
+      {
+        id: 'ai-learning',
+        title: 'Learning and Neural Networks',
+        sections: ['Machine Learning Basics', 'Neural Network Foundations', 'Deep Learning', 'Training and Generalization']
+      },
+      {
+        id: 'ai-language-vision',
+        title: 'Language, Vision and Knowledge',
+        sections: ['Language Models', 'Computer Vision', 'Knowledge Graphs', 'Reasoning Systems']
+      },
+      {
+        id: 'ai-future',
+        title: 'Applications and Future Directions',
+        sections: ['AI in Neuroscience', 'Brain-Inspired AI', 'Ethical Considerations', 'The Road Ahead']
+      }
+    ];
+  }
+
+  return chapters.value;
+});
 
 onMounted(loadCourse);
 
@@ -145,87 +146,32 @@ async function loadCourse() {
   const requestId = courseRequestId + 1;
   courseRequestId = requestId;
   courseLoading.value = true;
-  graphLoading.value = true;
   courseError.value = '';
-  chapterError.value = '';
-  graphError.value = '';
   course.value = null;
-  activeChapter.value = null;
-  graph.value = { nodes: [], edges: [] };
-  selectedQuestion.value = '';
-  chapterRequestId += 1;
+  activeChapterId.value = '';
 
   try {
-    const [courseResult, graphResult] = await Promise.allSettled([
-      getCourse(props.courseId),
-      getGraph(props.courseId)
-    ]);
+    const result = await getCourse(props.courseId);
     if (requestId !== courseRequestId) {
       return;
     }
 
-    if (graphResult.status === 'fulfilled') {
-      graph.value = graphResult.value || { nodes: [], edges: [] };
-    } else {
-      graph.value = { nodes: [], edges: [] };
-      graphError.value = graphResult.reason?.message || '无法加载知识图谱。';
-    }
-    graphLoading.value = false;
-
-    if (courseResult.status === 'rejected') {
-      throw courseResult.reason;
-    }
-
-    course.value = courseResult.value || null;
-    const firstChapter = chapters.value[0];
-
-    if (firstChapter?.id) {
-      await loadChapter(firstChapter.id);
-    }
+    course.value = result || null;
+    activeChapterId.value = visualChapters.value[0]?.id || '';
   } catch (caughtError) {
     if (requestId === courseRequestId) {
       course.value = null;
-      activeChapter.value = null;
-      graph.value = { nodes: [], edges: [] };
       courseError.value = caughtError?.message || '无法加载课程。';
     }
   } finally {
     if (requestId === courseRequestId) {
       courseLoading.value = false;
-      graphLoading.value = false;
     }
   }
 }
 
-async function loadChapter(chapterId) {
-  const requestId = chapterRequestId + 1;
-  chapterRequestId = requestId;
-  chapterLoading.value = true;
-  chapterError.value = '';
-  activeChapter.value = null;
-  selectedQuestion.value = '';
-
-  try {
-    const result = await getChapter(chapterId);
-    if (requestId === chapterRequestId) {
-      activeChapter.value = result || null;
-    }
-  } catch (caughtError) {
-    if (requestId === chapterRequestId) {
-      activeChapter.value = null;
-      chapterError.value = caughtError?.message || '无法加载章节。';
-    }
-  } finally {
-    if (requestId === chapterRequestId) {
-      chapterLoading.value = false;
-    }
-  }
-}
-
-async function selectTutorQuestion(question) {
-  selectedQuestion.value = '';
-  await nextTick();
-  selectedQuestion.value = question;
+function selectChapter(chapterId) {
+  activeChapterId.value = chapterId;
 }
 </script>
 
