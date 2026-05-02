@@ -96,6 +96,11 @@ describe('chapter activity flow state', () => {
       description: 'Neural networks learn layered representations from data.',
       backPath: '/courses/ai-intro'
     });
+    expect(buildChapterIdentity({
+      course: { id: 'brain-cog-intro', title: '脑机与认知科学导论' },
+      chapter,
+      chapterIndex: 2
+    }).courseLabel).toBe('NEUROSCIENCE 101');
   });
 
   it('computes progress and active activity details', () => {
@@ -125,9 +130,18 @@ describe('chapter activity flow state', () => {
     };
 
     const trace = buildConceptTrace(graph, ['concept-search']);
+    const repeatedTrace = buildConceptTrace(graph, ['concept-search']);
 
     expect(trace.nodes).toHaveLength(3);
     expect(trace.nodes[0]).toMatchObject({ id: 'concept-search', label: 'Heuristic Search', active: true });
+    expect(trace.nodes.map(({ id, x, y }) => ({ id, x, y }))).toEqual([
+      { id: 'concept-search', x: 50, y: 8 },
+      { id: 'concept-rl', x: 50, y: 50 },
+      { id: 'concept-attention', x: 50, y: 92 }
+    ]);
+    expect(repeatedTrace.nodes.map(({ id, x, y }) => ({ id, x, y }))).toEqual(
+      trace.nodes.map(({ id, x, y }) => ({ id, x, y }))
+    );
     expect(trace.edges).toEqual([
       { id: 'edge-1', source: 'concept-search', target: 'concept-rl', active: true },
       { id: 'edge-2', source: 'concept-rl', target: 'concept-attention', active: false }
