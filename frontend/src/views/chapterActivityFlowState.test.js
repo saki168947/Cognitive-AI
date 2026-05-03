@@ -110,6 +110,9 @@ describe('chapter activity flow state', () => {
     };
 
     expect(buildChapterActivityPath('ai-intro', 'ai-learning')).toBe('/courses/ai-intro/chapters/ai-learning');
+    expect(buildChapterActivityPath('brain-cog-intro', 'brain attention')).toBe(
+      '/courses/brain-cog-intro/chapters/brain%20attention'
+    );
     expect(buildChapterIdentity({ course, chapter, chapterIndex: 2 })).toEqual({
       courseLabel: 'AI INTRODUCTION',
       chapterNumber: '03',

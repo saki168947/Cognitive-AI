@@ -131,7 +131,7 @@ export function buildActivityFlow({ chapter = {}, activities = [] } = {}) {
 }
 
 export function buildChapterActivityPath(courseId, chapterId) {
-  return `/courses/${courseId}/chapters/${chapterId}`;
+  return `/courses/${courseId}/chapters/${encodeURIComponent(chapterId)}`;
 }
 
 export function buildChapterIdentity({ course = {}, chapter = {}, chapterIndex = 0 } = {}) {

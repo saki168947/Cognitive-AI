@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DashboardView from '../views/DashboardView.vue';
 import CourseView from '../views/CourseView.vue';
+import ChapterActivityFlowView from '../views/ChapterActivityFlowView.vue';
 import TeacherStudioView from '../views/TeacherStudioView.vue';
 
 const routes = [
@@ -13,6 +14,12 @@ const routes = [
     path: '/courses/:courseId',
     name: 'course',
     component: CourseView,
+    props: true
+  },
+  {
+    path: '/courses/:courseId/chapters/:chapterId',
+    name: 'chapter-activity-flow',
+    component: ChapterActivityFlowView,
     props: true
   },
   {
