@@ -34,6 +34,14 @@ const ACTIVITY_FALLBACKS = {
   }
 };
 
+const ACTIVITY_LAUNCH_LABELS = {
+  lecture_deck: 'Open lecture',
+  code_lab: 'Open lab',
+  cognitive_experiment: 'Start experiment',
+  bci_dataset_lab: 'Open data lab',
+  quiz_reflection: 'Start check'
+};
+
 const COURSE_LABELS = {
   'ai-intro': 'AI INTRODUCTION',
   'brain-cog-intro': 'NEUROSCIENCE 101'
@@ -98,6 +106,7 @@ function normalizeActivityFlowItem(item, type, order) {
     type,
     order,
     displayTitle: displayTitleFor(type, item.title),
+    launchLabel: ACTIVITY_LAUNCH_LABELS[type] || 'Open activity',
     provider: item.provider || DEFAULT_PROVIDER,
     linked_concept_ids: Array.isArray(item.linked_concept_ids) ? item.linked_concept_ids : []
   };

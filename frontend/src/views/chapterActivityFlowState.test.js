@@ -171,4 +171,23 @@ describe('chapter activity flow state', () => {
       { id: 'edge-2', source: 'concept-rl', target: 'concept-attention', active: false }
     ]);
   });
+
+  it('keeps launch copy concrete for each flow type', () => {
+    const flow = buildActivityFlow({
+      chapter: {
+        id: 'brain-attention',
+        title: 'Attention',
+        quiz_items: [{ id: 'q1', prompt: 'How does attention select information?' }]
+      },
+      activities: []
+    });
+
+    expect(flow.map((item) => item.launchLabel)).toEqual([
+      'Open lecture',
+      'Open lab',
+      'Start experiment',
+      'Open data lab',
+      'Start check'
+    ]);
+  });
 });
