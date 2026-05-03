@@ -117,6 +117,7 @@ const loading = ref(false);
 const error = ref('');
 const activeActivityId = ref('');
 let loadRequestId = 0;
+const EMPTY_GRAPH = { nodes: [], edges: [] };
 
 const courseChapters = computed(() => (
   Array.isArray(course.value?.chapters) ? course.value.chapters : []
@@ -214,19 +215,29 @@ async function loadChapterFlow() {
   course.value = null;
   chapter.value = null;
   activities.value = [];
-  graph.value = null;
+  graph.value = EMPTY_GRAPH;
+
+  getGraph(props.courseId)
+    .then((graphResult) => {
+      if (requestId === loadRequestId) {
+        graph.value = graphResult || EMPTY_GRAPH;
+      }
+    })
+    .catch(() => {
+      if (requestId === loadRequestId) {
+        graph.value = EMPTY_GRAPH;
+      }
+    });
 
   try {
     const [
       courseResult,
       chapterResult,
-      activityResult,
-      graphResult
+      activityResult
     ] = await Promise.all([
       getCourse(props.courseId),
       getChapter(props.chapterId),
-      listCourseActivities(props.courseId),
-      getGraph(props.courseId)
+      listCourseActivities(props.courseId)
     ]);
 
     if (requestId !== loadRequestId) return;
@@ -234,7 +245,6 @@ async function loadChapterFlow() {
     course.value = courseResult || null;
     chapter.value = chapterResult || null;
     activities.value = Array.isArray(activityResult) ? activityResult : [];
-    graph.value = graphResult || null;
   } catch (caughtError) {
     if (requestId === loadRequestId) {
       error.value = caughtError?.message || 'Unable to load chapter activity flow.';
