@@ -307,11 +307,8 @@ async function loadCourse() {
     setTimeout(animateLines, 400);
   } catch (caughtError) {
     if (requestId === courseRequestId) {
-      console.warn('Backend failed, using mock course data.', caughtError);
-      course.value = { id: props.courseId, title: 'AI与脑认知科学' };
-      courseError.value = '';
-      await nextTick();
-      setTimeout(animateLines, 400);
+      course.value = null;
+      courseError.value = caughtError?.message || '无法加载课程。';
     }
   } finally {
     if (requestId === courseRequestId) {
