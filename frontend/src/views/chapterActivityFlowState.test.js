@@ -61,22 +61,43 @@ describe('chapter activity flow state', () => {
       id: 'ai-search-lecture_deck-generated',
       source: 'generated',
       title: 'Lecture',
+      displayTitle: 'LECTURE',
       status: 'available',
-      estimated_minutes: 32
+      estimated_minutes: 32,
+      provider: 'generated',
+      linked_concept_ids: []
     });
     expect(flow[1]).toMatchObject({
       id: 'activity-ai-search-lab',
       source: 'activity',
       title: 'Code Lab: Heuristic Search Sandbox',
+      displayTitle: 'CODE LAB',
       status: 'published',
       estimated_minutes: 40,
-      provider: 'jupyterlite'
+      provider: 'jupyterlite',
+      linked_concept_ids: ['concept-search']
     });
     expect(flow[4]).toMatchObject({
       source: 'quiz',
       title: 'Quiz / Reflection',
-      summary: '1 review prompt available for this chapter.'
+      displayTitle: 'QUIZ / REFLECTION',
+      summary: '1 review prompt available for this chapter.',
+      provider: 'generated',
+      linked_concept_ids: []
     });
+  });
+
+  it('synthesizes canonical fallback flow when activities are malformed', () => {
+    const chapter = {
+      id: 'ai-foundations',
+      title: 'Foundations',
+      body: 'Foundations introduce agents, environments, and intelligence.'
+    };
+
+    expect(buildActivityFlow({ chapter, activities: null })).toHaveLength(ACTIVITY_FLOW_ORDER.length);
+    expect(buildActivityFlow({ chapter, activities: { status: 'published' } }).map((item) => item.type)).toEqual(
+      ACTIVITY_FLOW_ORDER
+    );
   });
 
   it('builds chapter identity and route paths', () => {

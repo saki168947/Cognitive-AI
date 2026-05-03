@@ -39,6 +39,8 @@ const COURSE_LABELS = {
   'brain-cog-intro': 'NEUROSCIENCE 101'
 };
 
+const DEFAULT_PROVIDER = 'generated';
+
 function chapterIdFor(chapter = {}) {
   return chapter.id || 'chapter';
 }
@@ -66,6 +68,8 @@ function fallbackFor(type, chapter = {}) {
       summary: `${quizItems.length} review ${promptLabel} available for this chapter.`,
       status: 'available',
       estimated_minutes: fallback.estimated_minutes,
+      provider: DEFAULT_PROVIDER,
+      linked_concept_ids: [],
       quiz_items: quizItems
     };
   }
@@ -77,15 +81,34 @@ function fallbackFor(type, chapter = {}) {
     title: fallback.title,
     summary: fallback.summary,
     status: 'available',
-    estimated_minutes: fallback.estimated_minutes
+    estimated_minutes: fallback.estimated_minutes,
+    provider: DEFAULT_PROVIDER,
+    linked_concept_ids: []
+  };
+}
+
+function displayTitleFor(type, title) {
+  const fallback = ACTIVITY_FALLBACKS[type];
+  return String(fallback?.title || title || type).toUpperCase();
+}
+
+function normalizeActivityFlowItem(item, type, order) {
+  return {
+    ...item,
+    type,
+    order,
+    displayTitle: displayTitleFor(type, item.title),
+    provider: item.provider || DEFAULT_PROVIDER,
+    linked_concept_ids: Array.isArray(item.linked_concept_ids) ? item.linked_concept_ids : []
   };
 }
 
 export function buildActivityFlow({ chapter = {}, activities = [] } = {}) {
   const chapterId = chapterIdFor(chapter);
+  const activityList = Array.isArray(activities) ? activities : [];
   const publishedByType = new Map();
 
-  activities
+  activityList
     .filter((activity) => activity?.chapter_id === chapterId && activity.status === 'published')
     .forEach((activity) => {
       if (!publishedByType.has(activity.type)) {
@@ -96,18 +119,14 @@ export function buildActivityFlow({ chapter = {}, activities = [] } = {}) {
   return ACTIVITY_FLOW_ORDER.map((type, index) => {
     const activity = publishedByType.get(type);
     if (!activity) {
-      return {
-        ...fallbackFor(type, chapter),
-        order: index + 1
-      };
+      return normalizeActivityFlowItem(fallbackFor(type, chapter), type, index + 1);
     }
 
-    return {
+    return normalizeActivityFlowItem({
       ...activity,
       type,
-      source: 'activity',
-      order: index + 1
-    };
+      source: 'activity'
+    }, type, index + 1);
   });
 }
 
