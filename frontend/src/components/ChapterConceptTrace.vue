@@ -46,8 +46,16 @@ function projectCoordinate(value, size, padding) {
   return padding + (number / 100) * usableSize;
 }
 
+const normalizedTrace = computed(() => {
+  if (!props.trace || typeof props.trace !== 'object' || Array.isArray(props.trace)) {
+    return { nodes: [], edges: [] };
+  }
+
+  return props.trace;
+});
+
 const renderedNodes = computed(() => {
-  const nodes = Array.isArray(props.trace.nodes) ? props.trace.nodes : [];
+  const nodes = Array.isArray(normalizedTrace.value.nodes) ? normalizedTrace.value.nodes : [];
 
   return nodes
     .filter((node) => node?.id)
@@ -74,10 +82,14 @@ const nodeMap = computed(() =>
 );
 
 const renderedEdges = computed(() => {
-  const edges = Array.isArray(props.trace.edges) ? props.trace.edges : [];
+  const edges = Array.isArray(normalizedTrace.value.edges) ? normalizedTrace.value.edges : [];
 
   return edges
     .map((edge, index) => {
+      if (!edge || typeof edge !== 'object' || edge.source == null || edge.target == null) {
+        return null;
+      }
+
       const source = nodeMap.value.get(edge.source);
       const target = nodeMap.value.get(edge.target);
 
