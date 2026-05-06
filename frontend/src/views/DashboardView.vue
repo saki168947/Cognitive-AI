@@ -1,483 +1,653 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref, onBeforeUnmount } from 'vue';
 import { RouterLink } from 'vue-router';
-import ActivityTimeline from '../components/ActivityTimeline.vue';
-import { getDashboardSummary } from '../api/dashboard';
+import FeatureParticles from '../components/FeatureParticles.vue';
+import gsap from 'gsap';
 
-const summary = ref(null);
-const loading = ref(true);
-const error = ref('');
+const mouseX = ref(0);
+const mouseY = ref(0);
 
-const courses = computed(() => summary.value?.courses ?? []);
-const nextActivities = computed(() => summary.value?.nextActivities ?? []);
-const draftActivities = computed(() => summary.value?.draftActivities ?? []);
-const pendingReviews = computed(() => summary.value?.pendingReviews ?? []);
-const dashboardErrors = computed(() => [
-  error.value,
-  ...(summary.value?.errors ?? [])
-].filter(Boolean));
-const totals = computed(() => summary.value?.totals ?? {
-  courseCount: 0,
-  activities: 0,
-  publishedActivities: 0,
-  draftActivities: 0,
-  pendingReviews: 0,
-  graphNodes: 0,
-  graphEdges: 0
+function onMouseMove(e) {
+  mouseX.value = (e.clientX / window.innerWidth - 0.5) * 2;
+  mouseY.value = (e.clientY / window.innerHeight - 0.5) * 2;
+
+  // Floating geometric elements parallax
+  gsap.to('.parallax-fast', { x: mouseX.value * 40, y: mouseY.value * 40, duration: 1.2, ease: 'power2.out' });
+  gsap.to('.parallax-slow', { x: mouseX.value * -20, y: mouseY.value * -20, duration: 1.8, ease: 'power2.out' });
+
+  // Text parallax
+  gsap.to('.parallax-text', { x: mouseX.value * 15, y: mouseY.value * 15, duration: 1.5, ease: 'power2.out' });
+
+  // Main brain image 3D tilt
+  gsap.to('.brain-image', {
+    x: mouseX.value * 15,
+    y: mouseY.value * 15,
+    rotationY: mouseX.value * 8,
+    rotationX: -mouseY.value * 8,
+    duration: 1,
+    ease: 'power2.out'
+  });
+}
+
+onMounted(() => {
+  window.addEventListener('mousemove', onMouseMove);
+
+  const tl = gsap.timeline();
+
+  tl.fromTo('.hero-tag',
+    { opacity: 0, x: -20 },
+    { opacity: 1, x: 0, duration: 0.8, ease: 'expo.out' }
+  )
+  .fromTo('.hero-title-line',
+    { opacity: 0, y: 40 },
+    { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'expo.out' },
+    '-=0.6'
+  )
+  .fromTo('.hero-desc',
+    { opacity: 0, y: 20 },
+    { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out' },
+    '-=0.6'
+  )
+  .fromTo('.hero-link',
+    { opacity: 0 },
+    { opacity: 1, duration: 0.8 },
+    '-=0.4'
+  )
+  .fromTo('.brain-image',
+    { opacity: 0, scale: 0.9, filter: 'blur(10px)' },
+    { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.5, ease: 'expo.out' },
+    '-=0.8'
+  )
+  .fromTo('.visual-decor > *',
+    { opacity: 0, scale: 0 },
+    { opacity: 1, scale: 1, duration: 1, stagger: 0.1, ease: 'back.out(1.5)' },
+    '-=1.2'
+  )
+  .fromTo('.floating-text',
+    { opacity: 0 },
+    { opacity: 1, duration: 1, stagger: 0.1 },
+    '-=1'
+  )
+  .fromTo('.feature-col, .blue-block',
+    { opacity: 0, y: 30 },
+    { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'expo.out' },
+    '-=0.6'
+  );
+
+  // Continuous slight floating animation for the brain if mouse is still
+  gsap.to('.scene-wrapper', {
+    y: '-=15',
+    duration: 3,
+    yoyo: true,
+    repeat: -1,
+    ease: 'sine.inOut'
+  });
 });
 
-const primaryActivity = computed(() => nextActivities.value[0] || null);
-const primaryCourse = computed(() => {
-  if (primaryActivity.value) {
-    return courses.value.find((course) =>
-      course.id === primaryActivity.value.course_id || course.id === primaryActivity.value.courseId
-    ) || null;
-  }
-  return courses.value[0] || null;
-});
-const primaryCoursePath = computed(() =>
-  primaryCourse.value ? `/courses/${primaryCourse.value.id}` : ''
-);
-
-const hasCourseError = computed(() =>
-  dashboardErrors.value.some((message) => message.includes('课程'))
-);
-const hasActivityError = computed(() =>
-  dashboardErrors.value.some((message) => message.includes('学习活动'))
-);
-const hasReviewError = computed(() =>
-  dashboardErrors.value.some((message) => message.includes('审核队列'))
-);
-
-onMounted(async () => {
-  loading.value = true;
-  error.value = '';
-  try {
-    summary.value = await getDashboardSummary();
-  } catch (caughtError) {
-    error.value = caughtError?.message || 'Unable to load dashboard.';
-  } finally {
-    loading.value = false;
-  }
+onBeforeUnmount(() => {
+  window.removeEventListener('mousemove', onMouseMove);
 });
 </script>
 
 <template>
-  <div class="dashboard-view">
-    <section class="dashboard-header shell-container" aria-labelledby="dashboard-title">
-      <div class="dashboard-title-block">
-        <p class="kicker">课程运营</p>
-        <h1 id="dashboard-title">课程工作台</h1>
-        <p>
-          查看已发布活动、课程覆盖和教师待处理事项，从当前最需要推进的课程进入工作区。
-        </p>
-      </div>
-
-      <RouterLink v-if="primaryCoursePath" :to="primaryCoursePath" class="dashboard-primary-action">
-        <span>{{ primaryActivity ? '打开活动课程工作区' : '进入课程工作区' }}</span>
-        <strong>{{ primaryActivity?.title || primaryCourse?.title || '暂无课程' }}</strong>
-      </RouterLink>
-      <span v-else class="dashboard-primary-action dashboard-primary-action--disabled">
-        <span>{{ loading ? '正在加载课程' : '暂无课程工作区' }}</span>
-        <strong>{{ loading ? '请稍候' : '请先发布课程活动' }}</strong>
-      </span>
-    </section>
-
-    <div v-if="dashboardErrors.length" class="shell-container dashboard-errors">
-      <p v-for="message in dashboardErrors" :key="message" class="status-message error">
-        {{ message }}
-      </p>
-    </div>
-
-    <section class="shell-container dashboard-grid" aria-label="课程运营概览">
-      <div class="stats-row">
-        <article class="stat-panel">
-          <span>课程</span>
-          <strong>{{ totals.courseCount }}</strong>
-        </article>
-        <article class="stat-panel">
-          <span>活动</span>
-          <strong>{{ totals.activities }}</strong>
-        </article>
-        <article class="stat-panel">
-          <span>待审核</span>
-          <strong>{{ totals.pendingReviews }}</strong>
-        </article>
-        <article class="stat-panel">
-          <span>图谱概念</span>
-          <strong>{{ totals.graphNodes }}</strong>
-        </article>
-      </div>
-
-      <section class="panel main-panel-block" aria-labelledby="next-activities-title">
-        <div class="panel-header-row">
-          <div>
-            <p class="eyebrow">Published activities</p>
-            <h2 id="next-activities-title">下一批学习活动</h2>
-          </div>
-          <span class="panel-count">{{ totals.publishedActivities }} 已发布</span>
-        </div>
-        <ActivityTimeline
-          :activities="nextActivities"
-          :loading="loading"
-          :empty-text="hasActivityError ? '学习活动数据暂不可用。' : '暂无已发布活动。请到教师工作室发布课件、实验或代码训练。'"
-        />
-      </section>
-
-      <section class="panel" aria-labelledby="courses-title">
-        <div class="panel-header-row">
-          <div>
-            <p class="eyebrow">Courses</p>
-            <h2 id="courses-title">课程工作区</h2>
-          </div>
-          <span class="panel-count">{{ courses.length }} 门课程</span>
+  <div class="dashboard">
+    <!-- Main Hero Container -->
+    <main class="hero-container container">
+      <!-- Left Content -->
+      <div class="hero-content">
+        <!-- Number indicator -->
+        <div class="side-indicator mono">
+          <span class="num">01</span>
+          <div class="line"></div>
+          <span class="num">05</span>
         </div>
 
-        <div v-if="courses.length > 0" class="dashboard-course-list">
-          <RouterLink
-            v-for="course in courses"
-            :key="course.id"
-            :to="`/courses/${course.id}`"
-            class="dashboard-course-card"
-          >
-            <span class="course-card-label">{{ course.chapterCount }} 章节</span>
-            <h3>{{ course.title }}</h3>
-            <p>{{ course.summary || '课程材料、活动和知识图谱已接入工作区。' }}</p>
-            <dl>
-              <div>
-                <dt>活动</dt>
-                <dd>{{ course.activityCount || 0 }}</dd>
-              </div>
-              <div>
-                <dt>概念</dt>
-                <dd>{{ course.graphNodeCount }}</dd>
-              </div>
-              <div>
-                <dt>关系</dt>
-                <dd>{{ course.graphEdgeCount }}</dd>
-              </div>
-            </dl>
+        <div class="content-wrapper">
+          <div class="hero-tag">
+            <span class="dot"></span>
+            <span class="tag-text">AI × 脑科学 × 认知科学</span>
+          </div>
+
+          <h1 class="hero-title display">
+            <span class="hero-title-line">AI与脑认知科学</span>
+          </h1>
+
+          <div class="hero-separator"></div>
+
+          <p class="hero-desc">
+            探索智能与大脑的共通原理，<br>
+            推动跨学科研究与教育创新。
+          </p>
+
+          <RouterLink to="/courses/ai-intro" class="hero-link">
+            了解更多 <span class="arrow">→</span>
           </RouterLink>
         </div>
-        <p v-else-if="loading" class="status-message">正在加载课程...</p>
-        <p v-else-if="hasCourseError" class="status-message warning">课程数据暂不可用。</p>
-        <p v-else class="status-message">暂无可用课程。</p>
-      </section>
+      </div>
 
-      <section class="panel" aria-labelledby="teacher-queue-title">
-        <div class="panel-header-row">
-          <div>
-            <p class="eyebrow">Teacher queue</p>
-            <h2 id="teacher-queue-title">教师队列</h2>
-          </div>
-          <RouterLink to="/teacher" class="panel-link">打开教师工作室</RouterLink>
+      <!-- Right Visual (Image & Geometry) -->
+      <div class="hero-visual">
+        <div class="visual-decor">
+          <div class="square-blue parallax-fast"></div>
+          <div class="triangle-blue parallax-slow"></div>
+          <div class="circle-blue parallax-fast"></div>
+
+          <div class="dots-grid top-right parallax-slow"></div>
+          <div class="dots-grid center-left parallax-fast"></div>
+
+          <svg class="connecting-lines" width="100%" height="100%" preserveAspectRatio="none">
+            <line x1="20%" y1="60%" x2="40%" y2="20%" stroke="var(--border-default)" stroke-width="1"/>
+            <line x1="40%" y1="20%" x2="80%" y2="30%" stroke="var(--border-default)" stroke-width="1"/>
+            <line x1="60%" y1="80%" x2="80%" y2="30%" stroke="var(--border-default)" stroke-width="1"/>
+            <line x1="20%" y1="60%" x2="60%" y2="80%" stroke="var(--border-default)" stroke-width="1"/>
+          </svg>
+
+          <!-- Nodes -->
+          <div class="node n1 parallax-slow"></div>
+          <div class="node n2 parallax-fast"></div>
+          <div class="node n3 parallax-slow"></div>
+          <div class="node n4 parallax-fast"></div>
         </div>
 
-        <div class="queue-summary">
-          <article>
-            <span>草稿活动</span>
-            <strong>{{ totals.draftActivities }}</strong>
-          </article>
-          <article>
-            <span>待审核材料</span>
-            <strong>{{ totals.pendingReviews }}</strong>
-          </article>
+        <!-- Interactive Brain Image Wrapper -->
+        <div class="scene-wrapper">
+          <img src="/brain-hero.png" alt="Brain Geometry" class="brain-image" draggable="false" />
         </div>
 
-        <div class="queue-list">
-          <p class="queue-heading">近期草稿</p>
-          <p v-if="loading" class="status-message">正在加载草稿活动...</p>
-          <ul v-else-if="draftActivities.length > 0">
-            <li v-for="activity in draftActivities" :key="activity.id">
-              <span>{{ activity.title || activity.id }}</span>
-              <small>{{ activity.status || 'draft' }}</small>
-            </li>
-          </ul>
-          <p v-else-if="hasActivityError" class="status-message warning">草稿活动数据暂不可用。</p>
-          <p v-else class="status-message">暂无草稿活动。</p>
-        </div>
+        <div class="floating-text t1 mono parallax-text">NEURAL<br>COGNITION</div>
+        <div class="floating-text t2 mono parallax-text">INTERDISCIPLINARY<br>EDUCATION</div>
+        <div class="floating-text t3 mono parallax-text">ARTIFICIAL<br>INTELLIGENCE</div>
+      </div>
+    </main>
 
-        <div class="queue-list">
-          <p class="queue-heading">审核事项</p>
-          <p v-if="loading" class="status-message">正在加载审核事项...</p>
-          <ul v-else-if="pendingReviews.length > 0">
-            <li v-for="item in pendingReviews.slice(0, 4)" :key="item.id">
-              <span>{{ item.title || item.payload?.title || '未命名材料' }}</span>
-              <small>{{ item.status || 'pending' }}</small>
-            </li>
-          </ul>
-          <p v-else-if="hasReviewError" class="status-message warning">审核队列数据暂不可用。</p>
-          <p v-else class="status-message">暂无待审核材料。</p>
+    <!-- Bottom Features Grid with Three.js interactions -->
+    <section class="features-grid container">
+      <!-- Column 1 -->
+      <div class="feature-col">
+        <div class="col-header">
+          <h3>跨学科课程</h3>
+          <span class="plus">+</span>
         </div>
-      </section>
+        <p>结合计算机科学、神经科学与心理学，构建系统化知识体系。</p>
+        <div class="col-graphic">
+          <FeatureParticles type="cloud" />
+        </div>
+      </div>
+
+      <!-- Column 2 -->
+      <div class="feature-col">
+        <div class="col-header">
+          <h3>前沿研究</h3>
+          <span class="plus">+</span>
+        </div>
+        <p>追踪最新研究进展，促进学术交流与合作创新。</p>
+        <div class="col-graphic">
+          <FeatureParticles type="organic" />
+        </div>
+      </div>
+
+      <!-- Column 3 -->
+      <div class="feature-col">
+        <div class="col-header">
+          <h3>学者社区</h3>
+          <span class="plus">+</span>
+        </div>
+        <p>连接全球学者与学生，共建开放、包容的学术生态。</p>
+        <div class="col-graphic">
+          <FeatureParticles type="network" />
+        </div>
+      </div>
+
+      <!-- Solid Blue Block -->
+      <div class="blue-block">
+        <p class="blue-block-text">知识是连接智能与人类的桥梁。</p>
+        <div class="blue-block-line"></div>
+        <RouterLink to="/teacher" class="blue-block-link">
+          加入我们 <span class="arrow">→</span>
+        </RouterLink>
+        <div class="geometric-decor">
+          <div class="shape s-circle"></div>
+          <div class="shape s-square"></div>
+          <div class="shape s-triangle"></div>
+        </div>
+      </div>
     </section>
   </div>
 </template>
 
 <style scoped>
-.dashboard-view {
+.dashboard {
   min-height: 100vh;
-  padding: calc(var(--nav-height) + 28px) 0 48px;
-  background: var(--ink-0);
-}
-
-.dashboard-header {
+  background: var(--surface-0);
+  padding-top: var(--nav-height);
   display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 22px;
+  flex-direction: column;
 }
 
-.dashboard-title-block {
+/* ══════ Hero ══════ */
+.hero-container {
+  flex: 1;
   display: grid;
-  gap: 8px;
-  max-width: 720px;
+  grid-template-columns: 45% 55%;
+  min-height: calc(100vh - var(--nav-height) - 300px);
+  position: relative;
 }
 
-.dashboard-title-block h1 {
-  margin: 0;
-  color: var(--text-1);
-  font-size: clamp(2rem, 4vw, 3.6rem);
-  line-height: 1.05;
-}
-
-.dashboard-title-block p {
-  margin: 0;
-  color: var(--text-3);
-  line-height: 1.6;
-}
-
-.dashboard-primary-action,
-.panel-link {
-  display: inline-grid;
-  gap: 4px;
-  min-width: 220px;
-  padding: 12px 14px;
-  border: 1px solid rgba(94, 234, 212, 0.28);
-  border-radius: 8px;
-  background: rgba(94, 234, 212, 0.08);
-  color: var(--text-1);
-}
-
-.dashboard-primary-action span,
-.panel-link {
-  color: var(--accent-cyan);
-  font-size: 0.82rem;
-  font-weight: 750;
-}
-
-.dashboard-primary-action strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-primary-action--disabled {
-  border-color: var(--line-medium);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-3);
-  cursor: default;
-}
-
-.dashboard-primary-action--disabled span {
-  color: var(--text-4);
-}
-
-.dashboard-errors {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.8fr);
-  gap: 16px;
-}
-
-.stats-row {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.stat-panel {
-  display: grid;
-  gap: 6px;
-  min-height: 104px;
-  padding: 16px;
-  border: 1px solid var(--line-medium);
-  border-radius: 8px;
-  background: rgba(17, 21, 26, 0.82);
-}
-
-.stat-panel span,
-.panel-count,
-.course-card-label {
-  color: var(--text-4);
-  font-size: 0.78rem;
-  font-weight: 750;
-}
-
-.stat-panel strong {
-  color: var(--text-1);
-  font-size: 2rem;
-  line-height: 1;
-}
-
-.main-panel-block {
-  grid-row: span 2;
-}
-
-.panel {
-  display: grid;
-  gap: 16px;
-}
-
-.panel-header-row {
+.hero-content {
   display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 12px;
+  position: relative;
+  padding: 80px 0 40px 0;
+  z-index: 10;
 }
 
-.panel-header-row h2 {
-  margin: 0;
-  color: var(--text-1);
-  font-size: 1.05rem;
-}
-
-.panel-link {
-  min-width: auto;
-  padding: 8px 10px;
-}
-
-.dashboard-course-list,
-.queue-list ul {
-  display: grid;
-  gap: 10px;
-}
-
-.dashboard-course-card {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.dashboard-course-card:hover {
-  border-color: rgba(94, 234, 212, 0.35);
-}
-
-.dashboard-course-card h3 {
-  margin: 0;
-  color: var(--text-1);
-  font-size: 1rem;
-}
-
-.dashboard-course-card p {
-  margin: 0;
-  color: var(--text-3);
-  line-height: 1.5;
-}
-
-.dashboard-course-card dl {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-}
-
-.dashboard-course-card div {
-  display: grid;
-  gap: 2px;
-}
-
-.dashboard-course-card dt {
+.side-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+  margin-right: 40px;
   color: var(--text-4);
-  font-size: 0.72rem;
+  font-size: 10px;
 }
 
-.dashboard-course-card dd {
-  margin: 0;
-  color: var(--text-1);
-  font-weight: 750;
+.side-indicator .line {
+  width: 1px;
+  flex: 1;
+  background: var(--border-default);
+  margin: 16px 0;
 }
 
-.queue-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.queue-summary article {
-  display: grid;
-  gap: 4px;
-  padding: 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.queue-summary span,
-.queue-list small {
-  color: var(--text-4);
-  font-size: 0.78rem;
-}
-
-.queue-summary strong {
-  color: var(--text-1);
-  font-size: 1.45rem;
-}
-
-.queue-heading {
-  margin: 0 0 8px;
-  color: var(--text-2);
-  font-weight: 750;
-}
-
-.queue-list ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.queue-list li {
+.hero-tag {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 36px;
-  padding: 8px 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  color: var(--text-2);
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-.queue-list li span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.hero-tag .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.hero-tag .tag-text {
+  color: var(--primary);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  font-size: 14px;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 5vw, 5rem);
+  color: var(--text-1);
+  margin-bottom: 32px;
   white-space: nowrap;
 }
 
-@media (max-width: 900px) {
-  .dashboard-header {
-    align-items: stretch;
-    flex-direction: column;
+.hero-separator {
+  width: 48px;
+  height: 2px;
+  background: var(--primary);
+  margin-bottom: 32px;
+}
+
+.hero-desc {
+  color: var(--text-3);
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 48px;
+}
+
+.hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+  font-size: 15px;
+  transition: color var(--dur-2) ease;
+}
+
+.hero-link .arrow {
+  color: var(--primary);
+  transition: transform var(--dur-2) ease;
+}
+
+.hero-link:hover {
+  color: var(--primary);
+}
+
+.hero-link:hover .arrow {
+  transform: translateX(6px);
+}
+
+/* ══════ Right Visual ══════ */
+.hero-visual {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+.scene-wrapper {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 700px;
+  z-index: 5;
+  perspective: 1200px; /* Crucial for 3D rotation of the image */
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brain-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* Geometry Decor */
+.visual-decor {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.square-blue {
+  position: absolute;
+  top: 30%;
+  left: 10%;
+  width: 80px;
+  height: 80px;
+  background: var(--primary);
+}
+
+.circle-blue {
+  position: absolute;
+  top: 50%;
+  right: 20%;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.triangle-blue {
+  position: absolute;
+  bottom: 20%;
+  left: 30%;
+  width: 0;
+  height: 0;
+  border-left: 40px solid transparent;
+  border-right: 40px solid transparent;
+  border-bottom: 69px solid var(--primary);
+}
+
+/* Dots pattern */
+.dots-grid {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background-image: radial-gradient(var(--text-4) 1px, transparent 1px);
+  background-size: 10px 10px;
+  opacity: 0.5;
+}
+
+.top-right {
+  top: 20%;
+  right: 10%;
+}
+
+.center-left {
+  top: 60%;
+  left: 5%;
+  width: 60px;
+  height: 150px;
+}
+
+.connecting-lines {
+  position: absolute;
+  inset: 0;
+}
+
+/* Nodes */
+.node {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.n1 { width: 8px; height: 8px; background: var(--primary); top: 15%; right: 25%; }
+.n2 { width: 6px; height: 6px; background: var(--text-1); top: 40%; right: 10%; }
+.n3 { width: 10px; height: 10px; background: var(--primary); bottom: 15%; right: 30%; }
+.n4 { width: 4px; height: 4px; background: var(--text-1); bottom: 35%; left: 15%; }
+
+/* Floating Text */
+.floating-text {
+  position: absolute;
+  font-size: 9px;
+  color: var(--primary);
+  letter-spacing: 0.1em;
+  z-index: 3;
+}
+
+.t1 { top: 15%; right: 5%; text-align: right; }
+.t2 { bottom: 25%; left: 5%; }
+.t3 { bottom: 15%; right: 10%; text-align: right; }
+
+/* ══════ Bottom Features ══════ */
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  align-items: stretch;
+  border-top: 1px solid var(--border-default);
+  margin-top: 40px;
+}
+
+.feature-col {
+  padding: 40px 40px 40px 0;
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-col:nth-child(3) {
+  padding-right: 40px;
+}
+
+.col-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.col-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.col-header .plus {
+  color: var(--primary);
+  font-size: 20px;
+  font-weight: 300;
+}
+
+.feature-col p {
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.col-graphic {
+  margin-top: auto;
+  height: 120px;
+  position: relative;
+  /* Make sure the container limits the Three.js canvas correctly */
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Solid Blue Block */
+.blue-block {
+  background: var(--primary);
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.blue-block-text {
+  color: var(--surface-0);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.blue-block-line {
+  width: 40px;
+  height: 1px;
+  background: var(--surface-0);
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.blue-block-link {
+  color: var(--surface-0);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.blue-block-link .arrow {
+  transition: transform var(--dur-2) ease;
+}
+
+.blue-block-link:hover .arrow {
+  transform: translateX(6px);
+}
+
+.geometric-decor {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0.8;
+}
+
+.geometric-decor .shape {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--surface-0);
+}
+
+.geometric-decor .s-circle {
+  border-radius: 50%;
+}
+
+.geometric-decor .s-triangle {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 34px solid transparent;
+  border-top: none;
+  border-bottom-color: var(--surface-0);
+  background: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  position: relative;
+}
+.geometric-decor .s-triangle::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: -18px;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-bottom: 31px solid var(--primary);
+}
+
+/* ══════ Responsive ══════ */
+@media (max-width: 1024px) {
+  .features-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .dashboard-grid,
-  .stats-row {
+  .feature-col {
+    padding: 32px 32px 32px 0;
+  }
+
+  .feature-col:nth-child(2) {
+    border-right: none;
+    padding-right: 0;
+    padding-left: 32px;
+  }
+
+  .feature-col:nth-child(3) {
+    border-top: 1px solid var(--border-default);
+  }
+
+  .blue-block {
+    grid-column: span 1;
+    border-top: 1px solid var(--border-default);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-container {
     grid-template-columns: 1fr;
   }
 
-  .main-panel-block {
-    grid-row: auto;
+  .hero-visual {
+    display: none; /* Hide heavy visual on mobile */
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-col {
+    padding: 32px 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .feature-col:nth-child(2) {
+    padding-left: 0;
+  }
+
+  .feature-col:nth-child(3) {
+    border-top: none;
+    border-bottom: none;
   }
 }
 </style>

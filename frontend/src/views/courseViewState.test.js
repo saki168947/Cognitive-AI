@@ -2,24 +2,38 @@ import { describe, expect, it } from 'vitest';
 import { chapterDisplayTitle, chapterNodeClass, chapterSubtopics } from './courseViewState';
 
 describe('course view state helpers', () => {
-  it('builds readable chapter titles with fallbacks', () => {
-    expect(chapterDisplayTitle({ title: 'Search and Problem Solving' })).toBe('Search and Problem Solving');
-    expect(chapterDisplayTitle({ name: 'Brain and Cognition' })).toBe('Brain and Cognition');
-    expect(chapterDisplayTitle({ id: 'chapter-4' })).toBe('chapter-4');
+  it('builds bilingual chapter titles with fallbacks', () => {
+    expect(chapterDisplayTitle({ title: 'Search and Problem Solving' })).toEqual({
+      en: 'Search and Problem Solving',
+      zh: 'Search and Problem Solving'
+    });
+    expect(chapterDisplayTitle({ id: 'ai-foundations' })).toEqual({
+      en: 'Foundations',
+      zh: '基础'
+    });
+    expect(chapterDisplayTitle({ id: 'unknown-id', name: 'Custom' })).toEqual({
+      en: 'Custom',
+      zh: 'Custom'
+    });
   });
 
-  it('extracts up to four subtopics from chapter metadata', () => {
-    expect(chapterSubtopics({
-      sections: ['Agents', 'Search', 'Heuristics', 'Optimization', 'Planning']
-    })).toEqual(['Agents', 'Search', 'Heuristics', 'Optimization']);
+  it('extracts up to four bilingual subtopics from chapter metadata', () => {
+    const result = chapterSubtopics({ id: 'ai-search' });
+    expect(result).toHaveLength(4);
+    expect(result[0]).toEqual({ en: 'Problem-Solving Agents', zh: '问题求解智能体' });
 
-    expect(chapterSubtopics({
-      objectives: ['Understand attention', 'Explain memory']
-    })).toEqual(['Understand attention', 'Explain memory']);
+    // fallback with raw sections
+    const raw = chapterSubtopics({
+      sections: ['Agents', 'Search']
+    });
+    expect(raw).toEqual([
+      { en: 'Agents', zh: 'Agents' },
+      { en: 'Search', zh: 'Search' }
+    ]);
   });
 
   it('falls back to a learning action when no subtopics exist', () => {
-    expect(chapterSubtopics({})).toEqual(['进入章节工作台']);
+    expect(chapterSubtopics({})).toEqual([{ en: 'Enter chapter workspace', zh: '进入章节工作台' }]);
   });
 
   it('cycles path position classes for long courses', () => {

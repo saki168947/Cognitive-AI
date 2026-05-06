@@ -15,3 +15,8 @@ from . import graph  # noqa: E402,F401
 from . import materials  # noqa: E402,F401
 from . import review  # noqa: E402,F401
 from . import tutor  # noqa: E402,F401
+from . import agents  # noqa: E402,F401
+from . import users  # noqa: E402,F401
+from . import assignments  # noqa: E402,F401
+from . import progress  # noqa: E402,F401
+from . import jobs  # noqa: E402,F401

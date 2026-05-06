@@ -1,5 +1,5 @@
 export function reviewItemCreatedMessage(created) {
-  return `Created review item ${created?.review_item_id || ''}`.trim();
+  return `已创建审核条目 ${created?.review_item_id || ''}`.trim();
 }
 
 export function createReviewActionTracker() {

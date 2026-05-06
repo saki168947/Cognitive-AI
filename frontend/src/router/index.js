@@ -3,6 +3,8 @@ import DashboardView from '../views/DashboardView.vue';
 import CourseView from '../views/CourseView.vue';
 import ChapterActivityFlowView from '../views/ChapterActivityFlowView.vue';
 import TeacherStudioView from '../views/TeacherStudioView.vue';
+import TutorView from '../views/TutorView.vue';
+import UploadView from '../views/UploadView.vue';
 
 const routes = [
   {
@@ -26,13 +28,24 @@ const routes = [
     path: '/teacher',
     name: 'teacher',
     component: TeacherStudioView
+  },
+  {
+    path: '/tutor',
+    name: 'tutor',
+    component: TutorView
+  },
+  {
+    path: '/upload',
+    name: 'upload',
+    component: UploadView
   }
 ];
 
 export default createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() {
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
     return { top: 0 };
   }
 });

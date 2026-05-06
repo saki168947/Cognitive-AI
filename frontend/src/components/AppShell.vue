@@ -1,66 +1,84 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { useWindowScroll } from '@vueuse/core';
 
 const route = useRoute();
-const { y: scrollY } = useWindowScroll({ behavior: 'smooth' });
-
-const isElevated = computed(() => scrollY.value > 48);
-const isAtTop = computed(() => scrollY.value < 12);
+const mobileOpen = ref(false);
 
 const navLinks = [
-  { to: '/', label: '工作台', match: (r) => r.name === 'dashboard' },
-  { to: '/courses/ai-intro', label: '课程工作区', match: (r) => r.name === 'course' },
+  { to: '/', label: '首页', match: (r) => r.name === 'dashboard' },
+  { to: '/courses/ai-intro', label: '课程', match: (r) => r.name === 'course' || r.name === 'chapter-activity-flow' },
+  { to: '/tutor', label: 'AI 助教', match: (r) => r.name === 'tutor' },
+  { to: '/upload', label: '上传材料', match: (r) => r.name === 'upload' },
   { to: '/teacher', label: '教师工作室', match: (r) => r.name === 'teacher' }
 ];
 
 function isActive(link) {
   return link.match(route);
 }
+
+function toggleMobile() {
+  mobileOpen.value = !mobileOpen.value;
+}
 </script>
 
 <template>
-  <div class="shell-root" :data-scrolled="!isAtTop">
-    <header
-      class="nav"
-      :data-elevated="isElevated"
-      :data-translucent="!isAtTop"
-    >
-      <div class="shell-container nav-inner">
-        <RouterLink to="/" class="brand-mark" aria-label="Cognitive AI home">
-          <span class="brand-glyph" aria-hidden="true">
-            <span class="brand-glyph-core"></span>
-            <span class="brand-glyph-ring"></span>
-          </span>
-          <span class="brand-text">
-            <span class="brand-name">认知智能教学平台</span>
-            <span class="brand-suffix">Course Studio</span>
-          </span>
+  <div class="shell-root">
+    <header class="nav">
+      <div class="container nav-inner">
+        <!-- Logo Section -->
+        <RouterLink to="/" class="brand" aria-label="AI与脑认知科学">
+          <div class="brand-icon-wrapper">
+            <div class="brand-shape square"></div>
+            <div class="brand-shape circle"></div>
+          </div>
+          <span class="brand-text">AI与脑认知科学</span>
         </RouterLink>
 
+        <!-- Centered Navigation Links -->
         <nav class="nav-links" aria-label="Primary">
           <RouterLink
             v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
             class="nav-link"
-            :data-active="isActive(link)"
+            :class="{ active: isActive(link) }"
           >
-            <span class="nav-link-label">{{ link.label }}</span>
-            <span class="nav-link-glow" aria-hidden="true"></span>
+            {{ link.label }}
           </RouterLink>
         </nav>
 
+        <!-- Right Side Actions -->
         <div class="nav-trailing">
-          <span class="workspace-pill mono">MVP</span>
-          <span class="user-pill" aria-label="已登录">
-            <span class="user-pill-avatar" aria-hidden="true">SH</span>
-          </span>
+          <button class="search-btn" aria-label="搜索">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+              <circle cx="11" cy="11" r="7"/>
+              <line x1="20" y1="20" x2="16" y2="16"/>
+            </svg>
+          </button>
+          <button class="login-btn">登录</button>
         </div>
+
+        <button class="mobile-toggle" @click="toggleMobile" aria-label="Toggle menu">
+          <span :class="{ open: mobileOpen }"></span>
+        </button>
       </div>
 
-      <span class="nav-edge" aria-hidden="true"></span>
+      <!-- Mobile menu -->
+      <transition name="fade">
+        <div v-if="mobileOpen" class="mobile-menu">
+          <RouterLink
+            v-for="link in navLinks"
+            :key="link.to"
+            :to="link.to"
+            class="mobile-link"
+            :class="{ active: isActive(link) }"
+            @click="mobileOpen = false"
+          >
+            {{ link.label }}
+          </RouterLink>
+        </div>
+      </transition>
     </header>
 
     <main class="shell-main">
@@ -71,8 +89,8 @@ function isActive(link) {
 
 <style scoped>
 .shell-root {
-  position: relative;
   min-height: 100vh;
+  background: var(--surface-0);
 }
 
 .nav {
@@ -80,295 +98,166 @@ function isActive(link) {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 100;
   height: var(--nav-height);
-  display: flex;
-  align-items: center;
-  background: transparent;
-  transition:
-    background var(--dur-3) var(--ease-out-expo),
-    backdrop-filter var(--dur-3) var(--ease-out-expo),
-    border-color var(--dur-3) var(--ease-out-expo);
-}
-
-.nav[data-translucent="true"] {
-  background: rgba(8, 8, 13, 0.55);
-  backdrop-filter: var(--nav-blur);
-  -webkit-backdrop-filter: var(--nav-blur);
-}
-
-.nav[data-elevated="true"] {
-  background: rgba(8, 8, 13, 0.78);
-}
-
-.nav-edge {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--line-medium) 20%,
-    var(--line-medium) 80%,
-    transparent
-  );
-  opacity: 0;
-  transition: opacity var(--dur-3) var(--ease-out-expo);
-}
-
-.nav[data-translucent="true"] .nav-edge {
-  opacity: 1;
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .nav-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
   align-items: center;
-  gap: var(--space-7);
   height: 100%;
 }
 
-.brand-mark {
-  display: inline-flex;
+/* ── Brand ── */
+.brand {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  color: var(--text-1);
-  transition: opacity var(--dur-2) var(--ease-out-expo);
+  gap: 16px;
 }
 
-.brand-mark:hover {
-  opacity: 0.85;
-}
-
-.brand-glyph {
+.brand-icon-wrapper {
   position: relative;
-  width: 26px;
-  height: 26px;
-  display: inline-grid;
-  place-items: center;
+  width: 24px;
+  height: 24px;
 }
 
-.brand-glyph-core {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-  box-shadow: 0 0 18px var(--accent-cyan-glow);
-  z-index: 2;
-}
-
-.brand-glyph-ring {
+.brand-shape {
   position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid var(--line-strong);
-  background:
-    conic-gradient(
-      from 0deg,
-      var(--accent-cyan),
-      var(--accent-violet),
-      var(--accent-cyan)
-    );
-  -webkit-mask:
-    radial-gradient(circle, transparent 9px, black 10px);
-          mask:
-    radial-gradient(circle, transparent 9px, black 10px);
-  animation: brand-spin 14s linear infinite;
 }
 
-@keyframes brand-spin {
-  to { transform: rotate(360deg); }
+.brand-shape.square {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--text-1);
+  top: 0;
+  left: 0;
+}
+
+.brand-shape.circle {
+  width: 12px;
+  height: 12px;
+  background: var(--primary);
+  border-radius: 50%;
+  bottom: 0;
+  right: 0;
 }
 
 .brand-text {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0;
+  font-size: 18px;
+  color: var(--text-1);
+  letter-spacing: -0.02em;
 }
 
-.brand-suffix {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  font-size: 12px;
-  color: var(--text-3);
-  letter-spacing: 0;
-}
-
+/* ── Nav Links ── */
 .nav-links {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  margin-right: auto;
+  justify-content: center;
+  gap: 40px;
 }
 
 .nav-link {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: var(--radius-full);
-  color: var(--text-2);
-  font-size: 13.5px;
-  font-weight: 500;
-  letter-spacing: 0;
-  transition:
-    color var(--dur-2) var(--ease-out-expo),
-    background var(--dur-2) var(--ease-out-expo),
-    transform var(--dur-2) var(--ease-out-expo);
-  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 0.05em;
+  padding: 8px 0;
+  transition: color var(--dur-2) ease;
 }
 
 .nav-link:hover {
   color: var(--text-1);
-  background: rgba(255, 255, 255, 0.04);
 }
 
-.nav-link[data-active="true"] {
+.nav-link.active {
   color: var(--text-1);
 }
 
-.nav-link[data-active="true"]::after {
+.nav-link.active::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -10px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent-cyan);
-  box-shadow: 0 0 12px var(--accent-cyan-glow);
-  transform: translateX(-50%);
+  bottom: -4px;
+  left: 0;
+  width: 16px;
+  height: 2px;
+  background: var(--primary);
 }
 
-.nav-link-label {
-  position: relative;
-  z-index: 1;
-}
-
-.nav-link-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(
-    120px 60px at var(--mx, 50%) var(--my, 50%),
-    var(--accent-cyan-soft),
-    transparent 70%
-  );
-  transition: opacity var(--dur-2) var(--ease-out-expo);
-}
-
-.nav-link:hover .nav-link-glow {
-  opacity: 1;
-}
-
+/* ── Trailing Actions ── */
 .nav-trailing {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  gap: 24px;
 }
 
-.workspace-pill {
-  display: inline-flex;
+.search-btn {
+  color: var(--text-1);
+  display: flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
-  min-width: 54px;
-  padding: 0 12px;
-  border-radius: var(--radius-full);
-  background: rgba(94, 234, 212, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.18);
-  color: var(--accent-cyan);
-  font-size: 11px;
-  font-weight: 600;
 }
 
-.user-pill {
-  width: 36px;
-  height: 36px;
+.login-btn {
+  background: var(--primary);
+  color: var(--text-inverse);
+  font-size: 13px;
+  font-weight: 600;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ink-5), var(--ink-3));
-  box-shadow: var(--inner-edge), var(--shadow-sm);
-  display: inline-grid;
-  place-items: center;
-  cursor: pointer;
-  transition: transform var(--dur-2) var(--ease-out-expo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-2) ease, background var(--dur-2) ease;
 }
 
-.user-pill:hover {
-  transform: translateY(-1px) scale(1.05);
+.login-btn:hover {
+  transform: scale(1.05);
+  background: var(--primary-hover);
 }
 
-.user-pill-avatar {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-2);
-  letter-spacing: 0.04em;
+/* ── Mobile ── */
+.mobile-toggle {
+  display: none;
 }
 
-.shell-main {
-  min-height: 100vh;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity var(--dur-2); }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
-@media (max-width: 880px) {
-  .brand-suffix,
-  .workspace-pill {
-    display: none;
-  }
-
+@media (max-width: 900px) {
   .nav-inner {
-    gap: var(--space-3);
+    grid-template-columns: 1fr auto;
   }
 
-  .nav-links {
-    flex: 1 1 auto;
-    justify-content: center;
-    min-width: 0;
-    margin: 0;
-  }
-
-  .nav-link {
-    padding: 0 10px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 640px) {
-  .brand-name,
-  .nav-trailing {
+  .nav-links, .nav-trailing {
     display: none;
   }
 
-  .nav-inner {
-    justify-content: flex-start;
+  .mobile-toggle {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    position: relative;
   }
 
-  .nav-links {
-    justify-content: flex-end;
-    overflow-x: auto;
-    scrollbar-width: none;
+  .mobile-toggle span,
+  .mobile-toggle span::before,
+  .mobile-toggle span::after {
+    position: absolute;
+    width: 24px;
+    height: 2px;
+    background: var(--text-1);
+    transition: all var(--dur-2) ease;
   }
 
-  .nav-links::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-@media (max-width: 420px) {
-  .nav-link {
-    padding: 0 8px;
-    font-size: 12px;
-  }
+  .mobile-toggle span { top: 50%; margin-top: -1px; }
+  .mobile-toggle span::before { content: ""; top: -6px; }
+  .mobile-toggle span::after { content: ""; top: 6px; }
 }
 </style>

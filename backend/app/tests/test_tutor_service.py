@@ -94,3 +94,44 @@ def test_tutor_api_rejects_non_string_context_fields(client):
 
     assert res.status_code == 400
     assert payload == {"success": False, "error": "course_id must be a string"}
+
+
+def test_tutor_api_rejects_unknown_course_id(client, app):
+    with app.app_context():
+        seed_courses()
+
+    res = client.post(
+        "/api/tutor/ask",
+        json={
+            "question": "What is attention?",
+            "course_id": "missing-course",
+        },
+    )
+    payload = res.get_json()
+
+    assert res.status_code == 400
+    assert payload == {"success": False, "error": "course_id not found"}
+
+
+def test_tutor_answer_reports_course_specific_mode(app):
+    with app.app_context():
+        seed_courses()
+
+        ai_result = TutorService.answer("What is heuristic search?", course_id="ai-intro")
+        brain_result = TutorService.answer("What is human attention?", course_id="brain-cog-intro")
+
+    assert ai_result["course_mode"] == "ai_engineering"
+    assert brain_result["course_mode"] == "cognitive_neuroscience"
+
+
+def test_tutor_system_prompt_changes_with_course_profile(app):
+    with app.app_context():
+        seed_courses()
+
+        ai_prompt = TutorService._build_system_prompt("ai-intro", None)
+        brain_prompt = TutorService._build_system_prompt("brain-cog-intro", None)
+
+    assert "算法机制" in ai_prompt
+    assert "模型边界" in ai_prompt
+    assert "神经机制" in brain_prompt
+    assert "实验范式" in brain_prompt

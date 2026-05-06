@@ -11,6 +11,8 @@ def _serialize(material):
         "course_id": material.course_id,
         "filename": material.filename,
         "parser_status": material.parser_status,
+        "chunk_count": material.chunk_count,
+        "extraction_method": material.extraction_method,
     }
 
 
@@ -21,7 +23,19 @@ def upload_material():
     if not course_id or file_storage is None:
         return jsonify({"success": False, "error": "course_id and file are required"}), 400
 
+    use_async = request.args.get("async") in ("1", "true", "yes")
+
     try:
+        if use_async:
+            material, job = MaterialService.ingest_upload_async(course_id, file_storage)
+            return jsonify({
+                "success": True,
+                "data": {
+                    "material": _serialize(material),
+                    "job_id": job.id,
+                    "async": True,
+                },
+            })
         material, review_item = MaterialService.ingest_upload(course_id, file_storage)
     except ValueError as exc:
         return jsonify({"success": False, "error": str(exc)}), 400

@@ -32,5 +32,8 @@ def create_app(test_config=None):
 
     with app.app_context():
         db.create_all()
+        # Apply lightweight schema migrations for existing databases
+        from .migrations import run_migrations
+        run_migrations()
 
     return app

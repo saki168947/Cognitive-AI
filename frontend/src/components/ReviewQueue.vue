@@ -1,6 +1,6 @@
 <template>
   <div class="review-queue">
-    <p v-if="items.length === 0" class="status-message">No pending review items.</p>
+    <p v-if="items.length === 0" class="status-message">暂无待审核条目。</p>
 
     <article v-for="item in items" :key="item.id" class="panel review-item">
       <header class="review-item-header">
@@ -16,7 +16,7 @@
             :disabled="isItemPending(item.id)"
             @click="$emit('approve', item.id)"
           >
-            {{ isItemPending(item.id) ? 'Working...' : 'Approve' }}
+            {{ isItemPending(item.id) ? '处理中…' : '批准' }}
           </button>
           <button
             v-if="item.status === 'draft'"
@@ -25,7 +25,7 @@
             :disabled="isItemPending(item.id)"
             @click="$emit('reject', item.id)"
           >
-            Reject
+            拒绝
           </button>
           <button
             v-if="item.status === 'reviewed'"
@@ -34,7 +34,7 @@
             :disabled="isItemPending(item.id)"
             @click="$emit('publish', item.id)"
           >
-            {{ isItemPending(item.id) ? 'Working...' : 'Publish' }}
+            {{ isItemPending(item.id) ? '处理中…' : '发布' }}
           </button>
         </div>
       </header>

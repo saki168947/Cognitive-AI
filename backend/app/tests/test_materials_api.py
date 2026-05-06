@@ -37,8 +37,12 @@ def test_upload_text_material_creates_chunks_and_review_payload(client, app):
         review_payload = ReviewService.get_payload(review_item)
 
         assert material.parser_status == "chunked"
-        assert [chunk.text for chunk in chunks] == ["Attention selects signals.", "Memory keeps context."]
-        assert chunks[0].citation_locator == "lecture.txt#chunk-1"
+        # New smart chunker merges short paragraphs into a single chunk for embedding density.
+        # Both paragraphs should appear in the joined chunk text.
+        all_chunk_text = "\n\n".join(c.text for c in chunks)
+        assert "Attention selects signals." in all_chunk_text
+        assert "Memory keeps context." in all_chunk_text
+        assert chunks[0].citation_locator.startswith("lecture.txt#")
         assert review_payload["course_id"] == "brain-cog-intro"
         assert review_payload["concepts"][0]["course_id"] == "brain-cog-intro"
 
@@ -153,13 +157,13 @@ def test_upload_rolls_back_database_and_file_when_review_creation_fails(client, 
 
     saved_paths = []
 
-    def fail_review_creation(material, commit=True):
+    def fail_review_creation(material, chunks, commit=True):
         saved_paths.append(material.path)
         raise RuntimeError("review failure")
 
     monkeypatch.setattr(
         MaterialService,
-        "create_review_suggestion_from_material",
+        "create_review_suggestion_from_chunks",
         staticmethod(fail_review_creation),
     )
     app.config["PROPAGATE_EXCEPTIONS"] = False

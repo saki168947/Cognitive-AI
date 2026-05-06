@@ -68,7 +68,7 @@ describe('teacher studio API wrappers', () => {
   });
 
   it('formats upload responses with backend review_item_id', () => {
-    expect(reviewItemCreatedMessage({ review_item_id: 'review-3' })).toBe('Created review item review-3');
+    expect(reviewItemCreatedMessage({ review_item_id: 'review-3' })).toBe('已创建审核条目 review-3');
   });
 
   it('tracks pending review actions by item id to block duplicate requests', () => {

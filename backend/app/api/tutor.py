@@ -1,4 +1,6 @@
-from flask import jsonify, request
+import json
+
+from flask import Response, jsonify, request, stream_with_context
 
 from app.api import api_bp
 from app.services.course_service import CourseService
@@ -29,6 +31,30 @@ def ask_tutor():
     if not CourseService.list_courses():
         seed_courses()
 
+    if course_id and CourseService.get_course(course_id) is None:
+        return jsonify({"success": False, "error": "course_id not found"}), 400
+
+    # Streaming mode
+    if request.args.get("stream"):
+        def generate():
+            for event in TutorService.answer_stream(
+                question,
+                course_id=course_id,
+                chapter_id=chapter_id,
+                concept_id=concept_id,
+            ):
+                yield event
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    # Non-streaming mode
     result = TutorService.answer(
         question,
         course_id=course_id,
